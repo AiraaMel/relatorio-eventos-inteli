@@ -331,12 +331,10 @@ let API_LOADED = false;
 
 // ── Parser de CSV do Google Sheets ───────────────────────────────────────────
 function parseCSV(text) {
-  const lines = text.split("
-");
+  const lines = text.split("\n");
   const result = [];
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].replace(/
-$/, "");
+    const line = lines[i].replace(/\r$/, "");
     const row = [];
     let cur = "", inQ = false;
     for (let j = 0; j < line.length; j++) {
