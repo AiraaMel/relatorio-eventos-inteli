@@ -189,6 +189,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;ba
 /* EMPTY */
 .empty-state{text-align:center;padding:3rem;color:var(--muted)}
 </style>
+<script src="config.js"></script>
 </head>
 <body>
 
@@ -325,33 +326,79 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;ba
 <div class="footer">inteli — Marketing de Eventos &nbsp;|&nbsp; Relatório interno &nbsp;|&nbsp; Atualizado em Junho 2026</div>
 
 <script>
-// ── URL da API (Apps Script Web App) ─────────────────────────────────────────
-// Substitua pela URL gerada ao implantar o Apps Script como Web App
-const API_URL = "https://script.google.com/macros/s/AKfycbxgpk5Ba8Mkh5tOeVreTYuQojtd2DWYcMWeYvlhkl3maFDKHnE0KfSERwcYIj7_imUkug/exec";
-
 let ALL_EVENTS = [];
 let API_LOADED = false;
 
-function carregarDados() {
+// ── Parser de CSV do Google Sheets ───────────────────────────────────────────
+function parseCSV(text) {
+  const lines = text.split(/
+?
+/);
+  const result = [];
+  for (let i = 0; i < lines.length; i++) {
+    const row = [];
+    let cur = "", inQ = false;
+    for (let j = 0; j < lines[i].length; j++) {
+      const ch = lines[i][j];
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === ',' && !inQ) { row.push(cur.trim()); cur = ""; }
+      else { cur += ch; }
+    }
+    row.push(cur.trim());
+    result.push(row);
+  }
+  return result;
+}
+
+const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+               "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+
+function csvParaEventos(rows) {
+  const eventos = [];
+  let mesAtual = null;
+
+  rows.forEach(row => {
+    const col0 = (row[0] || "").trim();
+
+    // Cabeçalho de mês
+    if (MESES.includes(col0)) { mesAtual = col0; return; }
+
+    // Pula cabeçalhos de coluna e linhas vazias
+    if (!col0 || col0 === "Data do evento") return;
+
+    // Tenta parsear a data
+    const dataParts = col0.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (!dataParts) return;
+    const dateStr = dataParts[0];
+
+    const nome = (row[2] || "").trim();
+    if (!nome) return;
+
+    eventos.push({
+      date:       dateStr,
+      month:      mesAtual || MESES[parseInt(dataParts[2]) - 1],
+      name:       nome,
+      tipo:       (row[3] || "").trim(),
+      area:       (row[4] || "").trim(),
+      espaco:     (row[5] || "").trim(),
+      horario:    (row[6] || "").trim(),
+      convidados: (row[7] || "").trim() || "-",
+      ticket_ev:  (row[8] || "").trim() || "-",
+      ticket_it:  (row[9] || "").trim() || "-",
+      ticket_fac: (row[10] || "").trim() || "-",
+      status:     (row[11] || "").trim(),
+      drive:      (row[13] || "").trim() || "#",
+    });
+  });
+
+  return eventos;
+}
+
+async function carregarDados() {
   const loading = document.getElementById("loading");
   const bodyEl  = document.querySelector(".body");
   if (loading) loading.style.display = "flex";
   if (bodyEl)  bodyEl.style.display  = "none";
-
-  // Usa JSONP para contornar bloqueio de CORS do Apps Script
-  const cbName = "apiCallback_" + Date.now();
-  const script = document.createElement("script");
-
-  const timeout = setTimeout(() => {
-    cleanup();
-    showError("Tempo limite esgotado. Verifique se a API está acessível.");
-  }, 15000);
-
-  function cleanup() {
-    delete window[cbName];
-    if (script.parentNode) script.parentNode.removeChild(script);
-    clearTimeout(timeout);
-  }
 
   function showError(msg) {
     if (loading) loading.style.display = "none";
@@ -360,24 +407,29 @@ function carregarDados() {
     document.getElementById("api-error-msg").textContent = msg;
   }
 
-  window[cbName] = function(json) {
-    cleanup();
+  try {
+    const res = await fetch(CONFIG.SHEETS_URL);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const text = await res.text();
+    const rows = parseCSV(text);
+    ALL_EVENTS = csvParaEventos(rows);
+    API_LOADED = true;
+  } catch(err) {
+    showError("Não foi possível carregar os dados: " + err.message);
+    return;
+  } finally {
     if (loading) loading.style.display = "none";
     if (bodyEl)  bodyEl.style.display  = "block";
-    if (!json.ok) { showError(json.erro || "Erro na API"); return; }
-    ALL_EVENTS = json.eventos;
-    API_LOADED = true;
+  }
+
+  if (API_LOADED) {
     populateFilters();
     renderDashboard();
     renderGrowth();
     renderMonthTabs();
     renderList();
     renderCal();
-  };
-
-  script.onerror = () => { cleanup(); showError("Não foi possível acessar a API."); };
-  script.src = API_URL + "?action=eventos&callback=" + cbName;
-  document.head.appendChild(script);
+  }
 }
 
 const TRI_MONTHS={Q1:["Janeiro","Fevereiro","Março"],Q2:["Abril","Maio","Junho"],Q3:["Julho","Agosto","Setembro"],Q4:["Outubro","Novembro","Dezembro"]};
