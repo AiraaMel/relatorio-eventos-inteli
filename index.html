@@ -327,39 +327,57 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;ba
 <script>
 // ── URL da API (Apps Script Web App) ─────────────────────────────────────────
 // Substitua pela URL gerada ao implantar o Apps Script como Web App
-const API_URL = "https://script.google.com/a/macros/sou.inteli.edu.br/s/AKfycbxZ55RmbdIcyqzFUjcfGad5PdnCRNQ2vUeUHJSu2t-nI3QlqUPDxOY4cuDGLqyUZ3w/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxZ55RmbdIcyqzFUjcfGad5PdnCRNQ2vUeUHJSu2t-nI3QlqUPDxOY4cuDGLqyUZ3w/exec";
 
 let ALL_EVENTS = [];
 let API_LOADED = false;
 
-async function carregarDados() {
+function carregarDados() {
   const loading = document.getElementById("loading");
   const bodyEl  = document.querySelector(".body");
   if (loading) loading.style.display = "flex";
   if (bodyEl)  bodyEl.style.display  = "none";
 
-  try {
-    const res  = await fetch(API_URL + "?action=eventos");
-    const json = await res.json();
-    if (!json.ok) throw new Error(json.erro || "Erro na API");
-    ALL_EVENTS = json.eventos;
-    API_LOADED = true;
-  } catch(err) {
-    console.error("Erro ao carregar dados:", err);
-    document.getElementById("api-error").style.display = "block";
-    document.getElementById("api-error-msg").textContent = err.message;
-  } finally {
+  // Usa JSONP para contornar bloqueio de CORS do Apps Script
+  const cbName = "apiCallback_" + Date.now();
+  const script = document.createElement("script");
+
+  const timeout = setTimeout(() => {
+    cleanup();
+    showError("Tempo limite esgotado. Verifique se a API está acessível.");
+  }, 15000);
+
+  function cleanup() {
+    delete window[cbName];
+    if (script.parentNode) script.parentNode.removeChild(script);
+    clearTimeout(timeout);
+  }
+
+  function showError(msg) {
     if (loading) loading.style.display = "none";
     if (bodyEl)  bodyEl.style.display  = "block";
-    if (API_LOADED) {
-      populateFilters();
-      renderDashboard();
-      renderGrowth();
-      renderMonthTabs();
-      renderList();
-      renderCal();
-    }
+    document.getElementById("api-error").style.display = "block";
+    document.getElementById("api-error-msg").textContent = msg;
   }
+
+  window[cbName] = function(json) {
+    cleanup();
+    if (loading) loading.style.display = "none";
+    if (bodyEl)  bodyEl.style.display  = "block";
+    if (!json.ok) { showError(json.erro || "Erro na API"); return; }
+    ALL_EVENTS = json.eventos;
+    API_LOADED = true;
+    populateFilters();
+    renderDashboard();
+    renderGrowth();
+    renderMonthTabs();
+    renderList();
+    renderCal();
+  };
+
+  script.onerror = () => { cleanup(); showError("Não foi possível acessar a API."); };
+  script.src = API_URL + "?action=eventos&callback=" + cbName;
+  document.head.appendChild(script);
 }
 
 const TRI_MONTHS={Q1:["Janeiro","Fevereiro","Março"],Q2:["Abril","Maio","Junho"],Q3:["Julho","Agosto","Setembro"],Q4:["Outubro","Novembro","Dezembro"]};
