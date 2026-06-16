@@ -331,15 +331,16 @@ let API_LOADED = false;
 
 // ── Parser de CSV do Google Sheets ───────────────────────────────────────────
 function parseCSV(text) {
-  const lines = text.split(/
-?
-/);
+  const lines = text.split("
+");
   const result = [];
   for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].replace(/
+$/, "");
     const row = [];
     let cur = "", inQ = false;
-    for (let j = 0; j < lines[i].length; j++) {
-      const ch = lines[i][j];
+    for (let j = 0; j < line.length; j++) {
+      const ch = line[j];
       if (ch === '"') { inQ = !inQ; }
       else if (ch === ',' && !inQ) { row.push(cur.trim()); cur = ""; }
       else { cur += ch; }
@@ -357,7 +358,7 @@ function csvParaEventos(rows) {
   const eventos = [];
   let mesAtual = null;
 
-  rows.forEach(row => {
+  rows.forEach(function(row) {
     const col0 = (row[0] || "").trim();
 
     // Cabeçalho de mês
@@ -366,17 +367,17 @@ function csvParaEventos(rows) {
     // Pula cabeçalhos de coluna e linhas vazias
     if (!col0 || col0 === "Data do evento") return;
 
-    // Tenta parsear a data
-    const dataParts = col0.match(/([0-9]{4})-([0-9]{2})-([0-9]{2})/);
-    if (!dataParts) return;
-    const dateStr = dataParts[0];
+    // Tenta parsear a data (formato YYYY-MM-DD)
+    const parts = col0.split("-");
+    if (parts.length !== 3 || parts[0].length !== 4) return;
+    const dateStr = col0.substring(0, 10);
 
     const nome = (row[2] || "").trim();
     if (!nome) return;
 
     eventos.push({
       date:       dateStr,
-      month:      mesAtual || MESES[parseInt(dataParts[2]) - 1],
+      month:      mesAtual || MESES[parseInt(parts[1]) - 1],
       name:       nome,
       tipo:       (row[3] || "").trim(),
       area:       (row[4] || "").trim(),
