@@ -408,7 +408,7 @@ async function carregarDados() {
   }
 
   try {
-    const res = await fetch(CONFIG.SHEETS_URL);
+    const res = await fetch("https://corsproxy.io/?" + encodeURIComponent(CONFIG.SHEETS_URL));
     if (!res.ok) throw new Error("HTTP " + res.status);
     const text = await res.text();
     const rows = parseCSV(text);
