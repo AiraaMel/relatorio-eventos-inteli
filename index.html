@@ -367,7 +367,7 @@ function csvParaEventos(rows) {
     if (!col0 || col0 === "Data do evento") return;
 
     // Tenta parsear a data
-    const dataParts = col0.match(/(\d{4})-(\d{2})-(\d{2})/);
+    const dataParts = col0.match(/([0-9]{4})-([0-9]{2})-([0-9]{2})/);
     if (!dataParts) return;
     const dateStr = dataParts[0];
 
