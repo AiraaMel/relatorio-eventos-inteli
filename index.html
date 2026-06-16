@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relatório de Eventos — Inteli</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#2B2D42;--red:#EF233C;--white:#fff;
+  --bg:#F4F4F6;--card:#fff;--border:#E2E2E6;
+  --text:#1A1A2E;--muted:#5A5A72;--muted2:#9898AA;
+  --green:#0F6E56;--green-bg:#E1F5EE;--green-txt:#085041;
+  --red-bg:#FCEBEB;--red-txt:#791F1F;
+  --gray-bg:#F1EFE8;--gray-txt:#444441;
+  --orange:#8B4A0E;--orange-bg:#FDF0E0;
+  --blue-bg:#EEF2FD;--blue-txt:#1D3A8C;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+
+/* TOPBAR */
+.topbar{background:var(--navy);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 2rem;position:sticky;top:0;z-index:100}
+.logo{color:#fff;font-size:18px;font-weight:500;letter-spacing:-.3px}.logo span{color:var(--red)}
+.topbar-right{color:#9999BB;font-size:12px}
+
+/* HERO */
+.hero{background:var(--navy);padding:1.75rem 2rem 0;border-bottom:3px solid var(--red)}
+.hero-inner{max-width:1200px;margin:0 auto}
+.hero-title{color:#fff;font-size:22px;font-weight:500;margin-bottom:3px}
+.hero-sub{color:#9999BB;font-size:13px;margin-bottom:1.25rem}
+.tri-nav{display:flex;gap:8px;flex-wrap:wrap}
+.tri-btn{padding:7px 16px;border-radius:6px;border:.5px solid rgba(255,255,255,.2);background:transparent;color:#9999BB;font-size:13px;cursor:pointer;transition:all .15s;font-family:inherit}
+.tri-btn:hover{background:rgba(255,255,255,.08);color:#fff}
+.tri-btn.active{background:var(--red);border-color:var(--red);color:#fff;font-weight:500}
+.tab-nav{display:flex;gap:0;margin-top:1.25rem;overflow-x:auto}
+.tab-btn{padding:10px 18px;background:transparent;border:none;color:#9999BB;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;font-family:inherit;transition:all .15s;white-space:nowrap}
+.tab-btn:hover{color:#fff}
+.tab-btn.active{color:#fff;border-bottom-color:var(--red)}
+
+/* BODY */
+.body{max-width:1200px;margin:0 auto;padding:1.5rem 2rem}
+.sec-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:.75rem}
+.tab-content{display:none}.tab-content.active{display:block}
+
+/* METRICS */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem}
+.metric{background:var(--card);border-radius:8px;padding:.9rem 1rem;border:.5px solid var(--border)}
+.metric .lbl{font-size:12px;color:var(--muted);margin-bottom:5px}
+.metric .val{font-size:30px;font-weight:500;line-height:1;color:var(--text)}
+.metric .val.g{color:var(--green)}.metric .val.r{color:#A32D2D}.metric .val.m{color:var(--muted)}
+.metric .sub{font-size:12px;color:var(--muted);margin-top:4px}
+
+/* GROWTH CARDS */
+.growth-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.5rem}
+.growth-card{background:var(--card);border-radius:10px;border:.5px solid var(--border);border-top:3px solid var(--red);padding:1rem 1.25rem}
+.growth-card .gc-month{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--red);margin-bottom:.5rem}
+.growth-card .gc-num{font-size:40px;font-weight:500;color:var(--text);line-height:1;margin-bottom:4px}
+.growth-card .gc-unit{font-size:13px;color:var(--muted);margin-bottom:.75rem}
+.growth-card .gc-divider{height:.5px;background:var(--border);margin-bottom:.75rem}
+.growth-card .gc-text{font-size:13px;color:var(--muted);line-height:1.55}
+.gc-textarea{width:100%;min-height:80px;border:.5px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;line-height:1.55;resize:vertical;background:var(--bg);outline:none;transition:border-color .15s}
+.gc-textarea:focus{border-color:#9999BB;background:#fff}
+.growth-arrow{display:flex;align-items:center;justify-content:center;gap:12px;padding:1rem;background:var(--card);border-radius:10px;border:.5px solid var(--border);margin-bottom:1.5rem;font-size:15px;font-weight:500;color:var(--text)}
+.growth-arrow .arr-item{text-align:center}
+.growth-arrow .arr-num{font-size:22px;font-weight:500;color:var(--navy)}
+.growth-arrow .arr-sub{font-size:12px;color:var(--muted)}
+.growth-arrow .arr-sep{color:var(--red);font-size:20px;font-weight:500}
+
+/* CHARTS */
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.5rem}
+.chart-card{background:var(--card);border:.5px solid var(--border);border-radius:10px;padding:1rem 1.25rem}
+.chart-card h3{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:.9rem}
+.bar-wrap{display:flex;align-items:flex-end;gap:12px;height:110px;padding-bottom:22px;position:relative}
+.bar-wrap::after{content:'';position:absolute;bottom:18px;left:0;right:0;height:.5px;background:var(--border)}
+.bar-item{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
+.bar{width:100%;border-radius:4px 4px 0 0}
+.bar-lbl{font-size:11px;color:var(--muted)}.bar-val{font-size:13px;font-weight:500;color:var(--text)}
+.donut-wrap{display:flex;align-items:center;gap:1rem}
+.legend{flex:1;display:flex;flex-direction:column;gap:7px}
+.leg-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.leg-pct{margin-left:auto;font-weight:500;color:var(--text);font-size:12px}
+
+/* EVENTS TABLE */
+.events-wrap{background:var(--card);border:.5px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:1.5rem}
+.events-head{display:grid;grid-template-columns:95px 1fr 130px 80px 100px 70px;padding:10px 16px;background:var(--navy);font-size:11px;font-weight:500;color:#9999BB;text-transform:uppercase;letter-spacing:.06em;gap:8px}
+.month-sep{padding:8px 16px;background:var(--bg);font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:.5px solid var(--border);display:flex;align-items:center;gap:8px}
+.month-count{background:var(--border);color:var(--muted);padding:1px 7px;border-radius:10px;font-size:11px}
+.ev-row{display:grid;grid-template-columns:95px 1fr 130px 80px 100px 70px;padding:10px 16px;border-bottom:.5px solid var(--border);font-size:13px;align-items:center;gap:8px;cursor:pointer;transition:background .1s}
+.ev-row:hover{background:#F9F9FB}.ev-row.expanded{background:#F4F4F9}.ev-row:last-child{border-bottom:none}
+.ev-date{color:var(--muted);font-size:12px}.ev-name{font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev-area{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:500;white-space:nowrap}
+.b-fin{background:var(--green-bg);color:var(--green-txt)}.b-can{background:var(--red-bg);color:var(--red-txt)}
+.b-na{background:var(--gray-bg);color:var(--gray-txt)}.b-and{background:var(--blue-bg);color:var(--blue-txt)}
+.b-pf{background:var(--orange-bg);color:var(--orange)}
+.drive-link{display:inline-flex;align-items:center;gap:4px;color:#185FA5;font-size:12px;text-decoration:none;padding:3px 8px;border-radius:4px;border:.5px solid #B5D4F4;background:#F0F7FF;transition:background .1s}
+.drive-link:hover{background:#DDF0FF}
+
+/* DETAIL PANEL */
+.detail-panel{padding:12px 16px 14px;background:#F7F7FB;border-bottom:.5px solid var(--border);display:none}
+.detail-panel.open{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.dp-field{display:flex;flex-direction:column;gap:3px}
+.dp-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted2);font-weight:500}
+.dp-val{font-size:13px;color:var(--text)}
+.tickets-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;grid-column:1/-1}
+.ticket-chip{padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;background:var(--blue-bg);color:var(--blue-txt);border:.5px solid #B8C9F5}
+
+/* HIGHLIGHTS MONTH CARDS */
+.highlights-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:1.5rem}
+.hl-card{background:var(--card);border:.5px solid var(--border);border-radius:10px;overflow:hidden}
+.hl-card-top{border-top:3px solid var(--red);padding:1rem 1.25rem}
+.hl-card h4{font-size:15px;font-weight:500;color:var(--text);margin-bottom:.75rem}
+.hl-divider{height:.5px;background:var(--border);margin-bottom:.75rem}
+.hl-field{display:flex;gap:8px;margin-bottom:5px;font-size:13px}
+.hl-key{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--red);min-width:90px}
+.hl-val{color:var(--text)}
+
+/* SUPPORT TEAMS */
+.support-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.support-card{background:var(--card);border:.5px solid var(--border);border-radius:10px;padding:1.25rem}
+.support-card h4{font-size:17px;font-weight:500;color:var(--text);margin-bottom:6px}
+.support-badge{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--red);margin-bottom:.75rem;display:block}
+.support-divider{height:.5px;background:var(--border);margin-bottom:.75rem}
+.support-card p{font-size:13px;color:var(--muted);line-height:1.6}
+.sinergy-card{background:var(--navy);border-radius:10px;padding:1.25rem 1.5rem;margin-bottom:1.5rem}
+.sinergy-card .s-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--red);margin-bottom:.75rem;display:block}
+.sinergy-card .s-divider{height:.5px;background:rgba(255,255,255,.15);margin-bottom:.75rem}
+.sinergy-card p{font-size:13px;color:rgba(255,255,255,.8);line-height:1.6}
+
+/* CONCLUSION */
+.conclusion-section{margin-bottom:1.5rem}
+.conclusion-section h3{font-size:17px;font-weight:500;color:var(--text);margin-bottom:.5rem}
+.conclusion-underline{height:3px;width:120px;background:var(--red);border-radius:2px;margin-bottom:1.25rem}
+.invest-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.5rem}
+.invest-card{background:var(--card);border:.5px solid var(--border);border-radius:10px;border-top:3px solid var(--red);padding:1rem 1.25rem}
+.invest-card .ic-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--red);margin-bottom:.5rem;display:block}
+.invest-card .ic-divider{height:.5px;background:var(--border);margin-bottom:.75rem}
+.invest-card p{font-size:13px;color:var(--muted);line-height:1.6}
+.rec-list{display:flex;flex-direction:column;gap:12px}
+.rec-item{display:flex;gap:12px;align-items:flex-start}
+.rec-dot{width:10px;height:10px;border-radius:50%;background:var(--red);flex-shrink:0;margin-top:4px}
+.rec-text{font-size:13px;color:var(--text);line-height:1.6}
+
+/* CALENDAR */
+.cal-section{background:var(--card);border:.5px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:1.5rem}
+.cal-header{padding:1rem 1.25rem;display:flex;align-items:center;gap:12px;border-bottom:.5px solid var(--border)}
+.cal-nav-btn{background:var(--bg);border:.5px solid var(--border);border-radius:6px;padding:6px 12px;cursor:pointer;font-family:inherit;font-size:13px;color:var(--text)}
+.cal-nav-btn:hover{background:var(--border)}
+.cal-month-lbl{font-size:16px;font-weight:500;color:var(--text);min-width:130px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:12px}
+.cal-dow{text-align:center;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:6px 0}
+.cal-dow.we{color:var(--red)}
+.cal-day{min-height:74px;background:var(--bg);border-radius:6px;padding:5px;border:.5px solid transparent;transition:border-color .1s}
+.cal-day:hover{border-color:var(--border)}.cal-day.empty{background:transparent;pointer-events:none}
+.cal-day.wknd{background:#FFF5F5}.day-num{font-size:12px;color:var(--muted);font-weight:500;margin-bottom:3px}
+.cal-day.has-ev .day-num{color:var(--text)}
+.ev-pill{font-size:10px;font-weight:500;padding:2px 5px;border-radius:3px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;display:block}
+.pill-navy{background:var(--navy);color:#fff}.pill-red{background:var(--red);color:#fff}
+.pill-green{background:#1D9E75;color:#fff}.pill-purple{background:#A259DD;color:#fff}.pill-gray{background:#B4B2A9;color:var(--gray-txt)}
+.more-badge{font-size:10px;color:var(--muted);background:var(--border);border-radius:3px;padding:1px 5px;display:inline-block}
+.cal-legend{display:flex;gap:16px;flex-wrap:wrap;padding:12px 1.25rem;border-top:.5px solid var(--border)}
+.cal-leg-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.cal-leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+
+/* MONTH TABS */
+.month-tabs-nav{display:flex;gap:6px;margin-bottom:1.25rem;flex-wrap:wrap}
+.mtab-btn{padding:6px 14px;border-radius:6px;border:.5px solid var(--border);background:var(--card);color:var(--muted);font-size:13px;cursor:pointer;font-family:inherit;transition:all .15s}
+.mtab-btn:hover{background:var(--bg)}.mtab-btn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.mtab-content{display:none}.mtab-content.active{display:block}
+
+/* EXPORT */
+.export-bar{display:flex;gap:8px;align-items:center;margin-bottom:1.25rem}
+.export-lbl{font-size:12px;color:var(--muted)}
+.export-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;border:.5px solid var(--border);background:var(--card);color:var(--text);font-size:13px;cursor:pointer;font-family:inherit;transition:background .1s}
+.export-btn:hover{background:var(--bg)}
+.export-btn svg{width:15px;height:15px;opacity:.6}
+
+/* FILTERS */
+.filter-row{display:flex;gap:8px;align-items:center;margin-bottom:1rem;flex-wrap:wrap}
+.filter-lbl{font-size:12px;color:var(--muted)}
+.filter-sel{padding:7px 10px;border-radius:6px;border:.5px solid var(--border);background:var(--card);font-size:13px;color:var(--text);font-family:inherit;cursor:pointer}
+.search-box{padding:7px 12px;border-radius:6px;border:.5px solid var(--border);background:var(--card);font-size:13px;color:var(--text);font-family:inherit;width:200px}
+.search-box:focus,.filter-sel:focus{outline:none;border-color:#9999BB}
+
+/* FOOTER */
+.footer{background:var(--navy);padding:1rem 2rem;text-align:center;color:#9999BB;font-size:12px;margin-top:2rem;border-top:3px solid var(--red)}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:3rem;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">inteli<span>.</span></div>
+  <div class="topbar-right">Relatório de Eventos — uso interno</div>
+</div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-title">Relatório de Eventos</div>
+    <div class="hero-sub">Visão operacional e analítica por período</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div class="tri-nav" id="triNav">
+        <button class="tri-btn active" onclick="setTri(this,'Q1')">1º Tri 2026</button>
+        <button class="tri-btn" onclick="setTri(this,'Q2')">2º Tri 2026</button>
+        <button class="tri-btn" onclick="setTri(this,'Q3')">3º Tri 2026</button>
+        <button class="tri-btn" onclick="setTri(this,'Q4')">4º Tri 2026</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button onclick="calNav(-1)" style="background:transparent;border:.5px solid rgba(255,255,255,.2);color:#9999BB;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:13px">&#8249;</button>
+        <div id="calLabelMini" style="color:#fff;font-size:13px;min-width:110px;text-align:center"></div>
+        <button onclick="calNav(1)" style="background:transparent;border:.5px solid rgba(255,255,255,.2);color:#9999BB;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:13px">&#8250;</button>
+        <button onclick="setTabById('calendario')" style="background:transparent;border:.5px solid rgba(255,255,255,.2);color:#9999BB;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:13px;font-family:inherit;margin-left:4px" onmouseover="this.style.background='rgba(255,255,255,.08)'" onmouseout="this.style.background='transparent'">Ver calendário</button>
+      </div>
+    </div>
+    <div class="tab-nav">
+      <button class="tab-btn active" onclick="setTab(this,'dashboard')">Resumo</button>
+      <button class="tab-btn" onclick="setTab(this,'crescimento')">Crescimento</button>
+      <button class="tab-btn" onclick="setTab(this,'meses')">Por mês</button>
+      <button class="tab-btn" onclick="setTab(this,'lista')">Lista de eventos</button>
+      <button class="tab-btn" onclick="setTab(this,'calendario')">Calendário</button>
+    </div>
+  </div>
+</div>
+
+<div class="body">
+
+<!-- ══ RESUMO ══ -->
+<div id="tab-dashboard" class="tab-content active">
+  <div class="export-bar">
+    <span class="export-lbl">Exportar:</span>
+    <button class="export-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>PDF</button>
+    <button class="export-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>PowerPoint</button>
+    <button class="export-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="8" y1="13" x2="16" y2="13"/></svg>Excel</button>
+  </div>
+  <div class="sec-label" id="dash-period-label">Visão geral — 1º Trimestre 2026</div>
+  <div class="metrics" id="metricsGrid"></div>
+  <div class="charts-row">
+    <div class="chart-card"><h3>Volume por mês</h3><div class="bar-wrap" id="barChart"></div></div>
+    <div class="chart-card"><h3>Área demandante</h3>
+      <div class="donut-wrap"><canvas id="donutCanvas" width="90" height="90"></canvas><div class="legend" id="donutLegend"></div></div>
+    </div>
+  </div>
+  <div class="sec-label">Resumo por mês</div>
+  <div class="events-wrap" style="margin-bottom:0">
+    <div class="events-head" style="grid-template-columns:120px 1fr 1fr 1fr 1fr">
+      <span>Mês</span><span>Total</span><span>Finalizados</span><span>Cancelados</span><span>Não se aplica</span>
+    </div>
+    <div id="monthSummaryTable"></div>
+    <div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr 1fr;padding:10px 16px;background:var(--navy);font-size:13px;font-weight:500" id="totalRow"></div>
+  </div>
+</div>
+
+<!-- ══ CRESCIMENTO ══ -->
+<div id="tab-crescimento" class="tab-content">
+  <div class="sec-label" id="growth-period-label">Crescimento no volume de eventos</div>
+  <div class="growth-row" id="growthCards"></div>
+  <div class="growth-arrow" id="growthArrow"></div>
+  <div class="sec-label">Análise de demanda</div>
+  <div class="chart-card" style="margin-bottom:1.5rem">
+    <h3>Distribuição por área demandante</h3>
+    <div id="demandAnalysis" style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;padding-top:.5rem"></div>
+  </div>
+</div>
+
+<!-- ══ POR MÊS ══ -->
+<div id="tab-meses" class="tab-content">
+  <div class="month-tabs-nav" id="monthTabsNav"></div>
+  <div id="monthTabsContent"></div>
+</div>
+
+<!-- ══ LISTA ══ -->
+<div id="tab-lista" class="tab-content">
+  <div class="filter-row">
+    <span class="filter-lbl">Filtrar:</span>
+    <input class="search-box" id="searchInput" type="text" placeholder="Buscar evento..." oninput="renderList()">
+    <select class="filter-sel" id="filterMes" onchange="renderList()"><option value="">Todos os meses</option></select>
+    <select class="filter-sel" id="filterStatus" onchange="renderList()">
+      <option value="">Todos os status</option>
+      <option>Finalizado</option><option>Cancelado</option><option>Não se aplica</option><option>Em andamento</option><option>Para fazer</option>
+    </select>
+    <select class="filter-sel" id="filterArea" onchange="renderList()"><option value="">Todas as áreas</option></select>
+  </div>
+  <div class="events-wrap" id="listContainer">
+    <div class="events-head"><span>Data</span><span>Evento</span><span>Área</span><span>Convidados</span><span>Status</span><span>Pasta</span></div>
+    <div id="listBody"></div>
+  </div>
+  <div style="font-size:12px;color:var(--muted);text-align:right;margin-top:4px" id="listCount"></div>
+</div>
+
+<!-- ══ CALENDÁRIO ══ -->
+<div id="tab-calendario" class="tab-content">
+  <div class="cal-section">
+    <div class="cal-header">
+      <button class="cal-nav-btn" onclick="calNav(-1)">&#8249;</button>
+      <div class="cal-month-lbl" id="calLabel"></div>
+      <button class="cal-nav-btn" onclick="calNav(1)">&#8250;</button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-legend">
+      <div class="cal-leg-item"><span class="cal-leg-dot" style="background:#2B2D42"></span>Exec / Novos Produtos</div>
+      <div class="cal-leg-item"><span class="cal-leg-dot" style="background:#EF233C"></span>Captação / MBA</div>
+      <div class="cal-leg-item"><span class="cal-leg-dot" style="background:#1D9E75"></span>Institucional / Onboarding</div>
+      <div class="cal-leg-item"><span class="cal-leg-dot" style="background:#A259DD"></span>Masterclass</div>
+      <div class="cal-leg-item"><span class="cal-leg-dot" style="background:#B4B2A9"></span>Cessão / Outros</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /body -->
+
+<div class="footer">inteli — Marketing de Eventos &nbsp;|&nbsp; Relatório interno &nbsp;|&nbsp; Atualizado em Junho 2026</div>
+
+<script>
+const ALL_EVENTS = [{"date":"2026-01-19","month":"Janeiro","name":"Inteli Camp","tipo":"Novos Produtos","area":"Relacionamento Escolas","espaco":"Térreo","horario":"08h00 - 18h00","convidados":"70","ticket_ev":"-","ticket_it":"não se aplica","ticket_fac":"#REQ-44594","status":"Finalizado"},{"date":"2026-01-20","month":"Janeiro","name":"Aula Aberta MBA","tipo":"Captação|Awareness","area":"Captação","espaco":"A09 e A011","horario":"09h00 - 11h00","convidados":"40","ticket_ev":"-","ticket_it":"cancelado","ticket_fac":"cancelado","status":"Cancelado"},{"date":"2026-01-20","month":"Janeiro","name":"Meet Up - Intercambio","tipo":"Captação|Awareness","area":"Admissões","espaco":"Online","horario":"18h00 - 19h00","convidados":"240","ticket_ev":"-","ticket_it":"cancelado","ticket_fac":"cancelado","status":"Cancelado"},{"date":"2026-01-26","month":"Janeiro","name":"Onboarding","tipo":"Engajamento","area":"Admissões","espaco":"Campus todo","horario":"08h00 - 18h00","convidados":"300","ticket_ev":"--","ticket_it":"#SR-44956","ticket_fac":"#REQ-44955","status":"Finalizado"},{"date":"2026-01-31","month":"Janeiro","name":"Aula Inaugural MBA","tipo":"Novos Produtos","area":"MBA","espaco":"Auditório","horario":"08h00 - 14h00","convidados":"50","ticket_ev":"-","ticket_it":"#SR-42869","ticket_fac":"#REQ-44735","status":"Finalizado"},{"date":"2026-01-31","month":"Janeiro","name":"Exec - AI For Business - AI4BT35","tipo":"Novos Produtos","area":"Exec","espaco":"Atelies 09 e 11","horario":"08h00 - 18h00","convidados":"50","ticket_ev":"-","ticket_it":"#SR-44714","ticket_fac":"#REQ-44737","status":"Finalizado"},{"date":"2026-02-02","month":"Fevereiro","name":"Volta às aulas","tipo":"Institucional","area":"CDL","espaco":"-","horario":"-","convidados":"-","ticket_ev":"-","ticket_it":"-","ticket_fac":"-","status":"Finalizado"},{"date":"2026-02-04","month":"Fevereiro","name":"Café com Sallouti","tipo":"Institucional","area":"Relações Institucionais","espaco":"Auditório","horario":"08h00 - 10h00","convidados":"45","ticket_ev":"-","ticket_it":"#SR-45169","ticket_fac":"#REQ-45234","status":"Finalizado"},{"date":"2026-02-04","month":"Fevereiro","name":"Masterclass - Axxon Group","tipo":"Novos Produtos","area":"Exec","espaco":"Estúdio","horario":"13h30-18h00","convidados":"-","ticket_ev":"-","ticket_it":"#SR-43591","ticket_fac":"x","status":"Não se aplica"},{"date":"2026-02-04","month":"Fevereiro","name":"Masterclass - Ifood","tipo":"Novos Produtos","area":"Exec","espaco":"Auditório","horario":"13h00-18h30","convidados":"40","ticket_ev":"-","ticket_it":"#SR-44883","ticket_fac":"-","status":"Finalizado"},{"date":"2026-02-07","month":"Fevereiro","name":"ISMART","tipo":"Suporte","area":"Cessão de Espaço","espaco":"Auditório + Atelies","horario":"08h00-15h00","convidados":"300","ticket_ev":"-","ticket_it":"-","ticket_fac":"-","status":"Cancelado"},{"date":"2026-02-10","month":"Fevereiro","name":"Aula Aberta AI for Education","tipo":"Captação|Awareness","area":"Captação","espaco":"Online","horario":"19h00-20h00","convidados":"-","ticket_ev":"-","ticket_it":"#SR-45245","ticket_fac":"-","status":"Finalizado"},{"date":"2026-02-11","month":"Fevereiro","name":"Masterclass - Ifood","tipo":"Novos Produtos","area":"Exec","espaco":"Estúdio","horario":"13h00-18h00","convidados":"-","ticket_ev":"-","ticket_it":"#SR-44884","ticket_fac":"x","status":"Não se aplica"},{"date":"2026-02-12","month":"Fevereiro","name":"Masterclass - Cardif","tipo":"Novos Produtos","area":"Exec","espaco":"Estúdio","horario":"13h30-18h00","convidados":"-","ticket_ev":"-","ticket_it":"#SR-44750","ticket_fac":"x","status":"Não se aplica"},{"date":"2026-02-21","month":"Fevereiro","name":"CAMPUS FECHADO - Manutenção Elétrica","tipo":"","area":"Facilities","espaco":"Todos","horario":"07h00-21h00","convidados":"-","ticket_ev":"-","ticket_it":"-","ticket_fac":"x","status":"Não se aplica"},{"date":"2026-02-23","month":"Fevereiro","name":"Exec - Semana Trainees Ambev","tipo":"Novos Produtos","area":"Exec","espaco":"Auditório","horario":"08h00 - 18h00","convidados":"30","ticket_ev":"-","ticket_it":"#SR-44778","ticket_fac":"x","status":"Cancelado"},{"date":"2026-02-24","month":"Fevereiro","name":"Exec - Semana Trainees Ambev","tipo":"Novos Produtos","area":"Exec","espaco":"Auditório","horario":"08h00 - 18h00","convidados":"30","ticket_ev":"-","ticket_it":"#SR-44778","ticket_fac":"x","status":"Cancelado"},{"date":"2026-02-25","month":"Fevereiro","name":"Exec - Semana Trainees Ambev","tipo":"Novos Produtos","area":"Exec","espaco":"Atelie A13","horario":"08h00 - 18h00","convidados":"30","ticket_ev":"-","ticket_it":"#SR-44774","ticket_fac":"x","status":"Cancelado"},{"date":"2026-02-25","month":"Fevereiro","name":"Exec - AI4BT37 OPM","tipo":"Novos Produtos","area":"Exec","espaco":"Auditório","horario":"08h00 - 18h00","convidados":"60","ticket_ev":"-","ticket_it":"#SR-44768","ticket_fac":"x","status":"Cancelado"},{"date":"2026-02-26","month":"Fevereiro","name":"Colação de Grau 2025.2","tipo":"Suporte","area":"Acadêmico","espaco":"Online","horario":"-","convidados":"-","ticket_ev":"-","ticket_it":"-","ticket_fac":"-","status":"Não se aplica"},{"date":"2026-02-26","month":"Fevereiro","name":"Exec - Semana Trainees Ambev","tipo":"Novos Produtos","area":"Exec","espaco":"Auditório","horario":"08h00 - 18h00","convidados":"30","ticket_ev":"-","ticket_it":"#SR-44778","ticket_fac":"x","status":"Cancelado"},{"date":"2026-02-27","month":"Fevereiro","name":"Exec - Semana Trainees Ambev","tipo":"Novos Produtos","area":"Exec","espaco":"Auditório","horario":"08h00 - 18h00","convidados":"30","ticket_ev":"-","ticket_it":"#SR-44778","ticket_fac":"x","status":"Cancelado"},{"date":"2026-02-28","month":"Fevereiro","name":"AI For Education","tipo":"Novos Produtos","area":"Exec","espaco":"A09 e A011","horario":"08h00 - 18h00","convidados":"30","ticket_ev":"-","ticket_it":"#SR-46004","ticket_fac":"#REQ-46006","status":"Finalizado"},{"date":"2026-02-28","month":"Fevereiro","name":"Aula - MBA","tipo":"Novos Produtos","area":"MBA","espaco":"Auditório","horario":"08h00 - 18h00","convidados":"56","ticket_ev":"-","ticket_it":"#SR-44770","ticket_fac":"#REQ-46008","status":"Finalizado"},{"date":"2026-02-28","month":"Fevereiro","name":"Redbull","tipo":"Suporte","area":"Cessão de Espaço","espaco":"Arquibancada","horario":"","convidados":"150","ticket_ev":"-","ticket_it":"#SR-46395","ticket_fac":"#REQ-46393","status":"Finalizado"},{"date":"2026-03-02","month":"Março","name":"Gravação do Marketing Maker","tipo":"Não se aplica","area":"Marketing","espaco":"Estúdio","horario":"13h00 - 14h00","convidados":"-","ticket_ev":"-","ticket_it":"-","ticket_fac":"-","status":"Não se aplica"},{"date":"2026-03-04","month":"Março","name":"Café com Sallouti","tipo":"Institucional","area":"Relações Institucionais","espaco":"Auditório","horario":"08h00 - 10h00","convidados":"45","ticket_ev":"-","ticket_it":"#SR-46399","ticket_fac":"#REQ-46398","status":"Finalizado"},{"date":"2026-03-07","month":"Março","name":"Exec - AI4BT38 B2C","tipo":"Novos Produtos","area":"Exec","espaco":"Auditório","horario":"08h00 - 18h00","convidados":"58","ticket_ev":"-","ticket_it":"#SR-44771","ticket_fac":"#REQ-46719","status":"Finalizado"},{"date":"2026-03-11","month":"Março","name":"Treinamento interno - Acadêmico e OVO","tipo":"Suporte","area":"Marketing","espaco":"A13","horario":"11h30 - 14h30","convidados":"30","ticket_ev":"-","ticket_it":"#SR-47035","ticket_fac":"-","status":"Finalizado"},{"date":"2026-03-12","month":"Março","name":"Nitro Academy","tipo":"Suporte","area":"Cessão de Espaço","espaco":"Auditório","horario":"09h00 - 12h00","convidados":"56","ticket_ev":"-","ticket_it":"#SR-46726","ticket_fac":"#REQ-47176","status":"Finalizado"},{"date":"2026-03-14","month":"Março","name":"Hackathon Camino T2 - Inteli","tipo":"Novos Produtos","area":"Relacionamento Escolas","espaco":"A13","horario":"09h00 - 12h00","convidados":"10","ticket_ev":"-","ticket_it":"-","ticket_fac":"-","status":"Finalizado"},{"date":"2026-03-16","month":"Março","name":"Red Bull","tipo":"Suporte","area":"Cessão de Espaço","espaco":"Arquibancada","horario":"19h00 - 21h30","convidados":"150","ticket_ev":"-","ticket_it":"#SR-47039","ticket_fac":"-","status":"Finalizado"},{"date":"2026-03-16","month":"Março","name":"Exec - Semana Trainees Ambev","tipo":"Novos Produtos","area":"Exec","espaco":"Auditório","horario":"08h00 - 18h30","convidados":"32","ticket_ev":"-","ticket_it":"#SR-44775","ticket_fac":"#REQ-46757","status":"Finalizado"},{"date":"2026-03-17","month":"Março","name":"Visita - St Nicholas School","tipo":"Novos Produtos","area":"Relacionamento Escolas","espaco":"A13","horario":"10h00 - 12h00","convidados":"20","ticket_ev":"-","ticket_it":"#SR-47038","ticket_fac":"#REQ-47037","status":"Finalizado"},{"date":"2026-03-17","month":"Março","name":"Exec - Semana Trainees Ambev","tipo":"Novos Produtos","area":"Exec","espaco":"Auditório","horario":"08h00 - 18h30","convidados":"32","ticket_ev":"-","ticket_it":"#SR-44775","ticket_fac":"#REQ-46757","status":"Finalizado"},{"date":"2026-03-17","month":"Março","name":"AI Custom - AI Champions Stone","tipo":"Não se aplica","area":"Exec","espaco":"Estúdio","horario":"10h00 - 12h00","convidados":"-","ticket_ev":"-","ticket_it":"-","ticket_fac":"-","status":"Não se aplica"},{"date":"2026-03-18","month":"Março","name":"Exec - Semana Trainees Ambev","tipo":"Novos Produtos","area":"Exec","espaco":"A13","horario":"08h00 - 18h30","convidados":"32","ticket_ev":"-","ticket_it":"#SR-44775","ticket_fac":"#REQ-46757","status":"Finalizado"},{"date":"2026-03-18","month":"Março","name":"Visita - Colégio Poliedro SJC","tipo":"Novos Produtos","area":"Relacionamento Escolas","espaco":"Auditório","horario":"17h00 - 19h00","convidados":"47","ticket_ev":"-","ticket_it":"#SR-47438","ticket_fac":"#REQ-47436","status":"Finalizado"},{"date":"2026-03-19","month":"Março","name":"BTG","tipo":"Suporte","area":"Cessão de Espaço","espaco":"Auditório","horario":"08h00-19h00","convidados":"56","ticket_ev":"-","ticket_it":"#SR-46904","ticket_fac":"#REQ-46905","status":"Finalizado"},{"date":"2026-03-19","month":"Março","name":"Exec - Semana Trainees Ambev","tipo":"Novos Produtos","area":"Exec","espaco":"A13","horario":"08h00 - 18h30","convidados":"32","ticket_ev":"-","ticket_it":"#SR-44777","ticket_fac":"#REQ-46757","status":"Finalizado"},{"date":"2026-03-20","month":"Março","name":"Exec - Semana Trainees Ambev","tipo":"Novos Produtos","area":"Exec","espaco":"Auditório","horario":"08h00 - 18h30","convidados":"32","ticket_ev":"-","ticket_it":"#SR-44775","ticket_fac":"#REQ-46757","status":"Finalizado"},{"date":"2026-03-24","month":"Março","name":"AI Custom - AI Champions Stone","tipo":"Novos Produtos","area":"Exec","espaco":"Estúdio","horario":"10h00 - 12h00","convidados":"-","ticket_ev":"-","ticket_it":"-","ticket_fac":"-","status":"Não se aplica"},{"date":"2026-03-26","month":"Março","name":"Exec - AI4BT36 OPM","tipo":"Novos Produtos","area":"Exec","espaco":"Auditório","horario":"08h00 - 18h30","convidados":"50","ticket_ev":"-","ticket_it":"#SR-44772","ticket_fac":"#REQ-47444","status":"Finalizado"},{"date":"2026-03-27","month":"Março","name":"Visita - Colégio Dante Alighieri/SP","tipo":"Novos Produtos","area":"Relacionamento Escolas","espaco":"Auditório","horario":"14h00 - 16h00","convidados":"30","ticket_ev":"-","ticket_it":"#SR-47448","ticket_fac":"#REQ-47445","status":"Finalizado"},{"date":"2026-03-28","month":"Março","name":"Visita - Colégio Mobile","tipo":"Novos Produtos","area":"Admissões","espaco":"A05","horario":"09h00 - 11h00","convidados":"30","ticket_ev":"-","ticket_it":"#SR-47451","ticket_fac":"#REQ-47450","status":"Finalizado"},{"date":"2026-03-28","month":"Março","name":"BTG - OBECON","tipo":"Suporte","area":"Cessão de Espaço","espaco":"Auditório + Térreo","horario":"08h00 - 18h00","convidados":"40","ticket_ev":"-","ticket_it":"#SR-47886","ticket_fac":"#REQ-47887","status":"Finalizado"},{"date":"2026-03-30","month":"Março","name":"Feira Internacional de Pós-graduação","tipo":"Suporte","area":"CDL","espaco":"Auditório","horario":"17h00 - 21h00","convidados":"30","ticket_ev":"-","ticket_it":"#SR-47755","ticket_fac":"#REQ-47756","status":"Finalizado"},{"date":"2026-03-30","month":"Março","name":"Café da manhã - Wuri","tipo":"Institucional","area":"Marketing","espaco":"Auditório","horario":"08h00 - 10h30","convidados":"70","ticket_ev":"-","ticket_it":"#SR-48109","ticket_fac":"#REQ-48231","status":"Finalizado"},{"date":"2026-03-31","month":"Março","name":"AI Custom - AI Champions Stone","tipo":"Não se aplica","area":"Exec","espaco":"Estúdio","horario":"10h00 - 12h00","convidados":"-","ticket_ev":"-","ticket_it":"-","ticket_fac":"-","status":"Não se aplica"}];
+
+const TRI_MONTHS={Q1:["Janeiro","Fevereiro","Março"],Q2:["Abril","Maio","Junho"],Q3:["Julho","Agosto","Setembro"],Q4:["Outubro","Novembro","Dezembro"]};
+const TRI_LABELS={Q1:"1º Trimestre 2026",Q2:"2º Trimestre 2026",Q3:"3º Trimestre 2026",Q4:"4º Trimestre 2026"};
+const TRI_CAL_START={Q1:{y:2026,m:0},Q2:{y:2026,m:3},Q3:{y:2026,m:6},Q4:{y:2026,m:9}};
+const MONTHS_PT=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+let currentTri="Q1";
+let calState={year:2026,month:0};
+let activeMonthTab=null;
+
+function evs(tri){return ALL_EVENTS.filter(e=>TRI_MONTHS[tri].includes(e.month));}
+function badgeClass(s){return{Finalizado:"b-fin",Cancelado:"b-can","Não se aplica":"b-na","Em andamento":"b-and","Para fazer":"b-pf"}[s]||"b-na";}
+function pillClass(tipo,area){
+  const t=((tipo||"")+(area||"")).toLowerCase();
+  if(t.includes("masterclass")) return "pill-purple";
+  if(t.includes("captação")||t.includes("mba")||t.includes("awareness")) return "pill-red";
+  if(t.includes("institucional")||t.includes("onboarding")||t.includes("engajamento")) return "pill-green";
+  if(t.includes("cessão")||t.includes("suporte")) return "pill-gray";
+  return "pill-navy";
+}
+function pad(n){return String(n).padStart(2,"0");}
+function fmt(date){return date.slice(8)+"/"+date.slice(5,7);}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────
+function renderDashboard(){
+  const ev=evs(currentTri), months=TRI_MONTHS[currentTri];
+  document.getElementById("dash-period-label").textContent="Visão geral — "+TRI_LABELS[currentTri];
+  const total=ev.length, fin=ev.filter(e=>e.status==="Finalizado").length,
+        can=ev.filter(e=>e.status==="Cancelado").length, na=ev.filter(e=>e.status==="Não se aplica").length,
+        pct=total?Math.round(fin/total*100):0;
+  document.getElementById("metricsGrid").innerHTML=`
+    <div class="metric"><div class="lbl">Total de eventos</div><div class="val">${total}</div><div class="sub">${months.join(" · ")}</div></div>
+    <div class="metric"><div class="lbl">Finalizados</div><div class="val g">${fin}</div><div class="sub">${pct}% de conclusão</div></div>
+    <div class="metric"><div class="lbl">Cancelados</div><div class="val r">${can}</div><div class="sub">${total?Math.round(can/total*100):0}% do total</div></div>
+    <div class="metric"><div class="lbl">Não se aplica</div><div class="val m">${na}</div><div class="sub">Cessões e internos</div></div>`;
+  const mc=months.map(m=>ev.filter(e=>e.month===m).length), mx=Math.max(...mc,1);
+  const bcolors=["#B5D4F4","#378ADD","#2B2D42"];
+  document.getElementById("barChart").innerHTML=months.map((m,i)=>`
+    <div class="bar-item"><div class="bar-val">${mc[i]}</div>
+    <div class="bar" style="height:${Math.max(10,Math.round(mc[i]/mx*100))}%;background:${bcolors[i]}"></div>
+    <div class="bar-lbl">${m.substring(0,3)}</div></div>`).join("");
+  const ac={};ev.forEach(e=>{const a=e.area||"Outros";ac[a]=(ac[a]||0)+1;});
+  const sorted=Object.entries(ac).sort((a,b)=>b[1]-a[1]);
+  const top5=sorted.slice(0,5); if(sorted.length>5) top5.push(["Outros",sorted.slice(5).reduce((s,x)=>s+x[1],0)]);
+  const dc=["#2B2D42","#EF233C","#1D9E75","#A259DD","#E27B30","#B4B2A9"];
+  const dt=top5.reduce((s,x)=>s+x[1],0);
+  const canvas=document.getElementById("donutCanvas"), ctx=canvas.getContext("2d");
+  ctx.clearRect(0,0,90,90); let angle=-Math.PI/2;
+  top5.forEach(([,cnt],i)=>{const sl=(cnt/dt)*Math.PI*2;ctx.beginPath();ctx.arc(45,45,35,angle,angle+sl);ctx.arc(45,45,19,angle+sl,angle,true);ctx.closePath();ctx.fillStyle=dc[i%dc.length];ctx.fill();angle+=sl;});
+  document.getElementById("donutLegend").innerHTML=top5.map(([n,cnt],i)=>`
+    <div class="leg-item"><span class="leg-dot" style="background:${dc[i%dc.length]}"></span>
+    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${n}</span>
+    <span class="leg-pct">${dt?Math.round(cnt/dt*100):0}%</span></div>`).join("");
+  const tbody=document.getElementById("monthSummaryTable");
+  tbody.innerHTML=months.map((m,i)=>{
+    const me=ev.filter(e=>e.month===m);
+    const bg=i%2===0?"background:var(--bg)":"";
+    return `<div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr 1fr;padding:10px 16px;border-bottom:.5px solid var(--border);font-size:13px;align-items:center;${bg}">
+      <span style="font-weight:500">${m}</span><span style="font-weight:500">${me.length}</span>
+      <span style="color:var(--green)">${me.filter(e=>e.status==="Finalizado").length}</span>
+      <span style="color:#A32D2D">${me.filter(e=>e.status==="Cancelado").length}</span>
+      <span style="color:var(--muted)">${me.filter(e=>e.status==="Não se aplica").length}</span></div>`;
+  }).join("");
+  const tr=document.getElementById("totalRow");
+  tr.innerHTML=`<span style="color:#fff">TOTAL</span><span style="color:var(--red);font-size:15px">${total}</span><span style="color:var(--red);font-size:15px">${fin}</span><span style="color:var(--red);font-size:15px">${can}</span><span style="color:var(--red);font-size:15px">${na}</span>`;
+}
+
+// ── CRESCIMENTO ───────────────────────────────────────────────────────────
+function genMonthContext(month, count, prev, fin, can, topArea){
+  const canPct=count?Math.round(can/count*100):0;
+  const finPct=count?Math.round(fin/count*100):0;
+  if(!prev){
+    if(count<=6) return `Início de período com volume reduzido (${count} eventos), focado em planejamento e primeiros processos de onboarding. Taxa de conclusão de ${finPct}%.`;
+    return `Abertura de período com ${count} eventos e taxa de conclusão de ${finPct}%. Área ${topArea} lidera a demanda desde o primeiro mês.`;
+  }
+  const growth=Math.round((count-prev)/prev*100);
+  const growthTxt=growth>0?`alta de ${growth}%`:`queda de ${Math.abs(growth)}%`;
+  if(growth>100) return `Pico de crescimento: ${growthTxt} em relação ao mês anterior, com ${count} eventos. A área ${topArea} impulsionou o aumento de demanda operacional.`;
+  if(growth>20) return `Crescimento consistente de ${growthTxt}, chegando a ${count} eventos. Taxa de conclusão de ${finPct}%, com ${can} cancelamento${can!==1?"s":""}.`;
+  if(growth>0) return `Crescimento moderado de ${growthTxt}, totalizando ${count} eventos. Demanda concentrada na área de ${topArea}.`;
+  return `Estabilização com ${count} eventos. Taxa de conclusão de ${finPct}%. ${canPct>20?"Alto índice de cancelamentos sugere revisão de planejamento.":"Operação dentro dos parâmetros esperados."}`;
+}
+
+function renderGrowth(){
+  const ev=evs(currentTri), months=TRI_MONTHS[currentTri];
+  document.getElementById("growth-period-label").textContent="Crescimento no volume de eventos — "+TRI_LABELS[currentTri];
+  const counts=months.map(m=>ev.filter(e=>e.month===m).length);
+  const multipliers=counts.map((c,i)=>i===0?"1x":(counts[i-1]>0?(c/counts[i-1]).toFixed(2).replace(".",",")+"x":"—"));
+  const growthTexts=counts.map((c,i)=>{
+    const me=ev.filter(e=>e.month===months[i]);
+    const fin=me.filter(e=>e.status==="Finalizado").length, can=me.filter(e=>e.status==="Cancelado").length;
+    const ac={};me.forEach(e=>{const a=e.area||"Outros";ac[a]=(ac[a]||0)+1;});
+    const topArea=Object.entries(ac).sort((a,b)=>b[1]-a[1])[0]?.[0]||"Exec";
+    return genMonthContext(months[i],c,i>0?counts[i-1]:null,fin,can,topArea);
+  });
+  document.getElementById("growthCards").innerHTML=months.map((m,i)=>`
+    <div class="growth-card">
+      <div class="gc-month">${m}</div>
+      <div class="gc-num">${counts[i]}</div>
+      <div class="gc-unit">eventos</div>
+      <div class="gc-divider"></div>
+      <textarea class="gc-textarea" id="gc-text-${currentTri}-${m}"
+        placeholder="Adicione uma análise sobre ${m}..."
+        oninput="saveGrowthText('${currentTri}','${m}',this.value)"
+      ></textarea>
+    </div>`).join("");
+  // Restore saved texts
+  months.forEach(m=>{
+    const key=`gc-${currentTri}-${m}`;
+    const saved=localStorage.getItem(key);
+    const el=document.getElementById(`gc-text-${currentTri}-${m}`);
+    if(el&&saved) el.value=saved;
+  });
+  document.getElementById("growthArrow").innerHTML=months.map((m,i)=>`
+    <div class="arr-item"><div class="arr-num">${counts[i]}</div><div class="arr-sub">${multipliers[i]}</div></div>
+    ${i<months.length-1?'<div class="arr-sep">→</div>':""}`).join("");
+
+  // Demand analysis
+  const ac={};ev.forEach(e=>{const a=e.area||"Outros";ac[a]=(ac[a]||0)+1;});
+  const sorted=Object.entries(ac).sort((a,b)=>b[1]-a[1]);
+  const total=ev.length;
+  const dc=["#2B2D42","#EF233C","#1D9E75","#A259DD","#E27B30","#B4B2A9","#9898AA"];
+  document.getElementById("demandAnalysis").innerHTML=`
+    <div>
+      ${sorted.slice(0,7).map(([name,cnt],i)=>`
+        <div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+            <span style="color:var(--text)">${name}</span>
+            <span style="font-weight:500;color:var(--text)">${Math.round(cnt/total*100)}%</span>
+          </div>
+          <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+            <div style="height:100%;width:${Math.round(cnt/total*100)}%;background:${dc[i%dc.length]};border-radius:3px"></div>
+          </div>
+        </div>`).join("")}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="background:var(--bg);border-radius:8px;padding:1rem">
+        <div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--red);margin-bottom:.5rem">Análise de demanda</div>
+        <p style="font-size:13px;color:var(--muted);line-height:1.6">
+          A área <strong style="color:var(--text)">${sorted[0]?.[0]||"Exec"}</strong> lidera a demanda do trimestre com ${sorted[0]?Math.round(sorted[0][1]/total*100):0}% dos eventos,
+          seguida por <strong style="color:var(--text)">${sorted[1]?.[0]||""}</strong> (${sorted[1]?Math.round(sorted[1][1]/total*100):0}%) e
+          <strong style="color:var(--text)">${sorted[2]?.[0]||""}</strong> (${sorted[2]?Math.round(sorted[2][1]/total*100):0}%).
+          ${sorted.length>3?`As demais ${sorted.length-3} áreas somam ${Math.round(sorted.slice(3).reduce((s,x)=>s+x[1],0)/total*100)}% do volume total.`:""}
+        </p>
+      </div>
+      <div style="background:var(--bg);border-radius:8px;padding:1rem">
+        <div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--red);margin-bottom:.5rem">Total no período</div>
+        <div style="font-size:32px;font-weight:500;color:var(--text)">${total}</div>
+        <div style="font-size:12px;color:var(--muted)">eventos em ${months.join(", ")}</div>
+      </div>
+    </div>`;
+}
+
+// ── POR MÊS ───────────────────────────────────────────────────────────────
+function renderMonthTabs(){
+  const months=TRI_MONTHS[currentTri], ev=evs(currentTri);
+  const nav=document.getElementById("monthTabsNav");
+  nav.innerHTML=months.map((m,i)=>`<button class="mtab-btn${i===0?" active":""}" onclick="setMonthTab(this,'mtab-${m}')">${m}</button>`).join("");
+  activeMonthTab=months[0];
+  const content=document.getElementById("monthTabsContent");
+  content.innerHTML=months.map((m,i)=>{
+    const me=ev.filter(e=>e.month===m);
+    const fin=me.filter(e=>e.status==="Finalizado"), can=me.filter(e=>e.status==="Cancelado"), na=me.filter(e=>e.status==="Não se aplica");
+    const ac={};me.forEach(e=>{const a=e.area||"Outros";ac[a]=(ac[a]||0)+1;});
+    const sorted=Object.entries(ac).sort((a,b)=>b[1]-a[1]);
+    const topEvs=me.filter(e=>e.status==="Finalizado"&&e.convidados&&e.convidados!=="-").sort((a,b)=>parseInt(b.convidados||0)-parseInt(a.convidados||0)).slice(0,4);
+
+    return `<div class="mtab-content${i===0?" active":""}" id="mtab-${m}">
+      <div class="metrics" style="grid-template-columns:repeat(4,1fr);margin-bottom:1.25rem">
+        <div class="metric"><div class="lbl">Total</div><div class="val">${me.length}</div><div class="sub">eventos em ${m}</div></div>
+        <div class="metric"><div class="lbl">Finalizados</div><div class="val g">${fin.length}</div><div class="sub">${me.length?Math.round(fin.length/me.length*100):0}% de conclusão</div></div>
+        <div class="metric"><div class="lbl">Cancelados</div><div class="val r">${can.length}</div></div>
+        <div class="metric"><div class="lbl">Não se aplica</div><div class="val m">${na.length}</div></div>
+      </div>
+      ${topEvs.length?`<div class="sec-label">Destaques do mês</div>
+      <div class="highlights-grid" style="grid-template-columns:repeat(${Math.min(topEvs.length,2)},1fr)">
+        ${topEvs.map(e=>`<div class="hl-card"><div class="hl-card-top">
+          <h4>${e.name}</h4>
+          <div class="hl-divider"></div>
+          <div class="hl-field"><span class="hl-key">Data</span><span class="hl-val">${fmt(e.date)}</span></div>
+          <div class="hl-field"><span class="hl-key">Área</span><span class="hl-val">${e.area||"—"}</span></div>
+          <div class="hl-field"><span class="hl-key">Convidados</span><span class="hl-val">${e.convidados}</span></div>
+          <div class="hl-field"><span class="hl-key">Espaço</span><span class="hl-val">${e.espaco||"—"}</span></div>
+          ${[e.ticket_it,e.ticket_fac].some(t=>t&&t!=="-"&&t!=="x"&&t!=="cancelado"&&t!=="não se aplica")?
+            `<div class="hl-field"><span class="hl-key">Tickets</span><span class="hl-val" style="font-size:12px">${[e.ticket_it,e.ticket_fac].filter(t=>t&&t!=="-"&&t!=="x"&&t!=="cancelado"&&t!=="não se aplica").join(" · ")}</span></div>`:""
+          }
+        </div></div>`).join("")}
+      </div>`:""}
+      <div class="sec-label">Distribuição por área</div>
+      <div class="chart-card" style="margin-bottom:1.5rem">
+        ${sorted.slice(0,6).map(([name,cnt])=>`
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <div style="font-size:13px;color:var(--text);min-width:160px">${name}</div>
+            <div style="flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden">
+              <div style="height:100%;width:${me.length?Math.round(cnt/me.length*100):0}%;background:var(--navy);border-radius:4px"></div>
+            </div>
+            <div style="font-size:12px;font-weight:500;color:var(--text);min-width:30px;text-align:right">${cnt}</div>
+          </div>`).join("")}
+      </div>
+      <div class="sec-label">Todos os eventos de ${m}</div>
+      <div class="events-wrap">
+        <div class="events-head"><span>Data</span><span>Evento</span><span>Área</span><span>Convidados</span><span>Status</span><span>Pasta</span></div>
+        <div>${me.map((e,idx)=>evRow(e,idx,"mtab")).join("")}</div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function setMonthTab(btn,id){
+  document.querySelectorAll(".mtab-btn").forEach(b=>b.classList.remove("active"));
+  document.querySelectorAll(".mtab-content").forEach(c=>c.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById(id).classList.add("active");
+}
+
+function evRow(e,idx,prefix){
+  return `<div class="ev-row" onclick="toggleDetail(this,'${prefix}-${e.date}-${idx}')">
+    <span class="ev-date">${fmt(e.date)}</span>
+    <span class="ev-name" title="${e.name}">${e.name}</span>
+    <span class="ev-area">${e.area||"—"}</span>
+    <span>${e.convidados!=="-"?e.convidados:"—"}</span>
+    <span><span class="badge ${badgeClass(e.status)}">${e.status||"—"}</span></span>
+    <span><a class="drive-link" href="#" onclick="event.stopPropagation()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Drive
+    </a></span>
+  </div>
+  <div class="detail-panel" id="${prefix}-${e.date}-${idx}">
+    <div class="dp-field"><span class="dp-lbl">Espaço</span><span class="dp-val">${e.espaco||"—"}</span></div>
+    <div class="dp-field"><span class="dp-lbl">Horário</span><span class="dp-val">${e.horario||"—"}</span></div>
+    <div class="dp-field"><span class="dp-lbl">Tipo</span><span class="dp-val">${e.tipo||"—"}</span></div>
+    <div class="dp-field"><span class="dp-lbl">Área</span><span class="dp-val">${e.area||"—"}</span></div>
+    ${[e.ticket_ev,e.ticket_it,e.ticket_fac].some(t=>t&&t!=="-"&&t!=="x"&&t!=="cancelado"&&t!=="não se aplica")?
+      `<div class="tickets-row">
+        ${e.ticket_ev&&e.ticket_ev!=="-"&&e.ticket_ev!=="x"?`<span class="ticket-chip">Eventos: ${e.ticket_ev}</span>`:""}
+        ${e.ticket_it&&e.ticket_it!=="-"&&e.ticket_it!=="x"&&e.ticket_it!=="cancelado"&&e.ticket_it!=="não se aplica"?`<span class="ticket-chip">IT Bar: ${e.ticket_it}</span>`:""}
+        ${e.ticket_fac&&e.ticket_fac!=="-"&&e.ticket_fac!=="x"&&e.ticket_fac!=="cancelado"&&e.ticket_fac!=="não se aplica"?`<span class="ticket-chip">Facilities: ${e.ticket_fac}</span>`:""}
+      </div>`:""
+    }
+  </div>`;
+}
+
+// ── TIMES ─────────────────────────────────────────────────────────────────
+function renderTimes(){
+  const ev=evs(currentTri), months=TRI_MONTHS[currentTri];
+  const total=ev.length, mc=months.map(m=>ev.filter(e=>e.month===m).length);
+  const maxM=Math.max(...mc), maxIdx=mc.indexOf(maxM);
+  document.getElementById("times-period-label").textContent="Atuação estratégica dos times de suporte — "+TRI_LABELS[currentTri];
+  document.getElementById("sinergyText").textContent=
+    `A colaboração integrada entre Facilities e IT Bar foi o pilar fundamental que permitiu à instituição absorver o crescimento de demanda em ${months[maxIdx]} (${maxM} eventos) sem comprometer a qualidade das entregas. A sinergia entre os times garante cobertura total nos eventos presenciais e suporte tecnológico nos formatos híbridos.`;
+  const list=document.getElementById("timesEventsList");
+  const relevant=ev.filter(e=>
+    (e.ticket_it&&e.ticket_it!=="-"&&e.ticket_it!=="x"&&e.ticket_it!=="cancelado"&&e.ticket_it!=="não se aplica")||
+    (e.ticket_fac&&e.ticket_fac!=="-"&&e.ticket_fac!=="x"&&e.ticket_fac!=="cancelado"&&e.ticket_fac!=="não se aplica")
+  );
+  let html="";
+  months.forEach(m=>{
+    const me=relevant.filter(e=>e.month===m);
+    if(!me.length) return;
+    html+=`<div class="month-sep">${m}<span class="month-count">${me.length}</span></div>`;
+    me.forEach(e=>{
+      const itOk=e.ticket_it&&e.ticket_it!=="-"&&e.ticket_it!=="x"&&e.ticket_it!=="cancelado"&&e.ticket_it!=="não se aplica";
+      const facOk=e.ticket_fac&&e.ticket_fac!=="-"&&e.ticket_fac!=="x"&&e.ticket_fac!=="cancelado"&&e.ticket_fac!=="não se aplica";
+      html+=`<div style="display:grid;grid-template-columns:95px 1fr 130px 120px 120px;padding:10px 16px;border-bottom:.5px solid var(--border);font-size:13px;align-items:center;gap:8px">
+        <span style="color:var(--muted);font-size:12px">${fmt(e.date)}</span>
+        <span style="font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.name}</span>
+        <span><span class="badge ${badgeClass(e.status)}">${e.status}</span></span>
+        <span style="font-size:12px;color:${itOk?"var(--blue-txt)":"var(--muted)"}">${itOk?e.ticket_it:"—"}</span>
+        <span style="font-size:12px;color:${facOk?"var(--green)":"var(--muted)"}">${facOk?e.ticket_fac:"—"}</span>
+      </div>`;
+    });
+  });
+  list.innerHTML=html||'<div class="empty-state"><p>Nenhum evento com ticket registrado</p></div>';
+}
+
+// ── LISTA ──────────────────────────────────────────────────────────────────
+function populateFilters(){
+  const ev=evs(currentTri);
+  const months=[...new Set(ev.map(e=>e.month))];
+  const areas=[...new Set(ev.map(e=>e.area).filter(Boolean))].sort();
+  document.getElementById("filterMes").innerHTML='<option value="">Todos os meses</option>'+months.map(m=>`<option>${m}</option>`).join("");
+  document.getElementById("filterArea").innerHTML='<option value="">Todas as áreas</option>'+areas.map(a=>`<option>${a}</option>`).join("");
+  document.getElementById("searchInput").value="";
+  document.getElementById("filterStatus").value="";
+}
+
+function renderList(){
+  const ev=evs(currentTri);
+  const q=(document.getElementById("searchInput").value||"").toLowerCase();
+  const mes=document.getElementById("filterMes").value;
+  const status=document.getElementById("filterStatus").value;
+  const area=document.getElementById("filterArea").value;
+  let filtered=ev.filter(e=>{
+    if(q&&!e.name.toLowerCase().includes(q)&&!(e.area||"").toLowerCase().includes(q)) return false;
+    if(mes&&e.month!==mes) return false;
+    if(status&&e.status!==status) return false;
+    if(area&&e.area!==area) return false;
+    return true;
+  });
+  const body=document.getElementById("listBody");
+  if(!filtered.length){body.innerHTML='<div class="empty-state"><p>Nenhum evento encontrado</p></div>';document.getElementById("listCount").textContent="";return;}
+  const grouped={};filtered.forEach(e=>{(grouped[e.month]=grouped[e.month]||[]).push(e);});
+  const orderedMonths=TRI_MONTHS[currentTri].filter(m=>grouped[m]);
+  body.innerHTML=orderedMonths.map(m=>`
+    <div class="month-sep">${m}<span class="month-count">${grouped[m].length}</span></div>
+    ${grouped[m].map((e,i)=>evRow(e,i,"list")).join("")}`).join("");
+  document.getElementById("listCount").textContent=`Exibindo ${filtered.length} evento${filtered.length!==1?"s":""}`;
+}
+
+// ── CALENDÁRIO ─────────────────────────────────────────────────────────────
+function setTabById(tab){
+  const btn=document.querySelector(`.tab-btn[onclick*='${tab}']`);
+  if(btn) setTab(btn,tab);
+}
+function renderCal(){
+  const {year,month}=calState;
+  const lbl=MONTHS_PT[month]+" "+year;
+  const el=document.getElementById("calLabel"); if(el) el.textContent=lbl;
+  const mini=document.getElementById("calLabelMini"); if(mini) mini.textContent=lbl;
+  const evsByDate={};
+  ALL_EVENTS.forEach(e=>{if(!e.date||e.date.length<10) return;(evsByDate[e.date]=evsByDate[e.date]||[]).push(e);});
+  const firstDay=new Date(year,month,1).getDay(), daysInMonth=new Date(year,month+1,0).getDate();
+  const dows=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+  let html=dows.map((d,i)=>`<div class="cal-dow${i===0||i===6?" we":""}">${d}</div>`).join("");
+  for(let i=0;i<firstDay;i++) html+=`<div class="cal-day empty"></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const key=`${year}-${pad(month+1)}-${pad(d)}`;
+    const de=evsByDate[key]||[];
+    const dow=new Date(year,month,d).getDay(), wknd=dow===0||dow===6;
+    html+=`<div class="cal-day${wknd?" wknd":""}${de.length?" has-ev":""}">
+      <div class="day-num">${d}</div>
+      ${de.slice(0,2).map(e=>`<span class="ev-pill ${pillClass(e.tipo,e.area)}" title="${e.name}">${e.name}</span>`).join("")}
+      ${de.length>2?`<span class="more-badge">+${de.length-2}</span>`:""}
+    </div>`;
+  }
+  document.getElementById("calGrid").innerHTML=html;
+}
+function calNav(dir){calState.month+=dir;if(calState.month<0){calState.month=11;calState.year--;}if(calState.month>11){calState.month=0;calState.year++;}renderCal();}
+
+// ── CONCLUSÃO ──────────────────────────────────────────────────────────────
+function renderConclusion(){
+  const ev=evs(currentTri), months=TRI_MONTHS[currentTri];
+  const total=ev.length, fin=ev.filter(e=>e.status==="Finalizado").length;
+  const counts=months.map(m=>ev.filter(e=>e.month===m).length);
+  const maxM=Math.max(...counts), maxIdx=counts.indexOf(maxM);
+  const canTotal=ev.filter(e=>e.status==="Cancelado").length;
+  const canPct=total?Math.round(canTotal/total*100):0;
+  const ac={};ev.forEach(e=>{const a=e.area||"Outros";ac[a]=(ac[a]||0)+1;});
+  const topArea=Object.entries(ac).sort((a,b)=>b[1]-a[1])[0]?.[0]||"Exec";
+
+  document.getElementById("investOpText").textContent=
+    `${canPct>20?"Com "+canPct+"% de cancelamentos, há oportunidade de":"Com "+canPct+"% de cancelamentos, recomenda-se"} otimizar o processo de confirmação via chamados, para ampliar o controle de qualidade e reduzir cancelamentos de último momento.`;
+
+  const recs=[
+    `O trimestre consolidou a capacidade operacional em lidar com alta volumetria, atingindo o pico de ${maxM} eventos em ${months[maxIdx]}.`,
+    `Recomenda-se a manutenção do modelo de suporte conjunto (Facilities + IT Bar) para garantir a fluidez nos próximos períodos.`,
+    `A área ${topArea} concentrou a maior parte da demanda (${total?Math.round((ac[topArea]||0)/total*100):0}%). Atenção ao planejamento antecipado para os meses seguintes.`,
+    `Taxa de conclusão de ${total?Math.round(fin/total*100):0}% no trimestre. ${fin/total>=0.7?"Resultado positivo acima de 70%.":"Há espaço para melhorar a taxa de finalização."}`,
+    `A sinergia entre as áreas foi o diferencial para o sucesso das entregas em um cenário de crescimento acelerado de demanda.`
+  ];
+  document.getElementById("recList").innerHTML=recs.map(r=>`
+    <div class="rec-item"><div class="rec-dot"></div><div class="rec-text">${r}</div></div>`).join("");
+}
+
+// ── TEXTOS EDITÁVEIS (crescimento)
+function saveGrowthText(tri,month,val){
+  localStorage.setItem(`gc-${tri}-${month}`,val);
+}
+
+// ── NAVEGAÇÃO GERAL ────────────────────────────────────────────────────────
+function toggleDetail(row,id){
+  const dp=document.getElementById(id);
+  if(!dp) return;
+  const open=dp.classList.toggle("open");
+  row.classList.toggle("expanded",open);
+}
+
+function setTri(btn,tri){
+  currentTri=tri;
+  document.querySelectorAll(".tri-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  const s=TRI_CAL_START[tri];calState={year:s.y,month:s.m};
+  populateFilters();renderDashboard();renderGrowth();renderMonthTabs();renderList();
+}
+
+function setTab(btn,tab){
+  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+  document.querySelectorAll(".tab-content").forEach(c=>c.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById("tab-"+tab).classList.add("active");
+  if(tab==="calendario") renderCal();
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+populateFilters();renderDashboard();renderGrowth();renderMonthTabs();renderList();renderCal();
+</script>
+</body>
+</html>
