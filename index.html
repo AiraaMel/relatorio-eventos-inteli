@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Relatório de Eventos — Inteli</title>
-<link rel="icon" href="data:,">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -190,20 +189,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;ba
 /* EMPTY */
 .empty-state{text-align:center;padding:3rem;color:var(--muted)}
 </style>
-<script src="config.js"></script>
 </head>
 <body>
 
-<!-- Loading overlay -->
-<div id="loading" style="display:none;position:fixed;inset:0;background:rgba(43,45,66,.85);z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
-  <div style="width:36px;height:36px;border:3px solid rgba(255,255,255,.2);border-top-color:#EF233C;border-radius:50%;animation:spin 0.8s linear infinite"></div>
-  <div style="color:#fff;font-size:14px;font-family:inherit">Carregando eventos...</div>
-</div>
-<div id="api-error" style="display:none;margin:2rem;padding:1.25rem;background:#FCEBEB;border:.5px solid #EF233C;border-radius:8px;color:#791F1F;font-size:13px">
-  Não foi possível carregar os dados. <span id="api-error-msg"></span><br>
-  <span style="font-size:12px;opacity:.7">Verifique se a URL da API está correta no arquivo index.html</span>
-</div>
-<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
 
 <div class="topbar">
   <div class="logo">inteli<span>.</span></div>
@@ -330,107 +319,87 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;ba
 let ALL_EVENTS = [];
 let API_LOADED = false;
 
-// ── Parser de CSV do Google Sheets ───────────────────────────────────────────
+const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+               "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+
 function parseCSV(text) {
-  const lines = text.split("\n");
-  const result = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].replace(/\r$/, "");
+  const lines = text.split("
+");
+  const rows = [];
+  for (const line of lines) {
     const row = [];
     let cur = "", inQ = false;
-    for (let j = 0; j < line.length; j++) {
-      const ch = line[j];
+    for (const ch of line.replace(/
+$/, "")) {
       if (ch === '"') { inQ = !inQ; }
       else if (ch === ',' && !inQ) { row.push(cur.trim()); cur = ""; }
       else { cur += ch; }
     }
     row.push(cur.trim());
-    result.push(row);
+    rows.push(row);
   }
-  return result;
+  return rows;
 }
 
-const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
-               "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+function parseDate(s) {
+  const p = s.trim().split("/");
+  if (p.length !== 3) return null;
+  const y = p[2].length === 2 ? "20" + p[2] : p[2];
+  return y + "-" + p[1].padStart(2,"0") + "-" + p[0].padStart(2,"0");
+}
 
-function csvParaEventos(rows) {
-  const eventos = [];
-  let mesAtual = null;
-
-  rows.forEach(function(row) {
-    const col0 = (row[0] || "").trim();
-
-    // Cabeçalho de mês
-    if (MESES.includes(col0)) { mesAtual = col0; return; }
-
-    // Pula cabeçalhos de coluna e linhas vazias
-    if (!col0 || col0 === "Data do evento") return;
-
-    // Tenta parsear a data (formato YYYY-MM-DD)
-    const parts = col0.split("-");
-    if (parts.length !== 3 || parts[0].length !== 4) return;
-    const dateStr = col0.substring(0, 10);
-
-    const nome = (row[2] || "").trim();
-    if (!nome) return;
-
-    eventos.push({
-      date:       dateStr,
-      month:      mesAtual || MESES[parseInt(parts[1]) - 1],
-      name:       nome,
-      tipo:       (row[3] || "").trim(),
-      area:       (row[4] || "").trim(),
-      espaco:     (row[5] || "").trim(),
-      horario:    (row[6] || "").trim(),
-      convidados: (row[7] || "").trim() || "-",
-      ticket_ev:  (row[8] || "").trim() || "-",
-      ticket_it:  (row[9] || "").trim() || "-",
-      ticket_fac: (row[10] || "").trim() || "-",
-      status:     (row[11] || "").trim(),
-      drive:      (row[13] || "").trim() || "#",
-    });
-  });
-
-  return eventos;
+function clean(v) {
+  const s = (v || "").toString().trim();
+  return (s === "nan" || s === "NaT") ? "" : s;
 }
 
 async function carregarDados() {
-  const loading = document.getElementById("loading");
-  const bodyEl  = document.querySelector(".body");
-  if (loading) loading.style.display = "flex";
-  if (bodyEl)  bodyEl.style.display  = "none";
-
-  function showError(msg) {
-    if (loading) loading.style.display = "none";
-    if (bodyEl)  bodyEl.style.display  = "block";
-    document.getElementById("api-error").style.display = "block";
-    document.getElementById("api-error-msg").textContent = msg;
-  }
-
   try {
-    const res = await fetch("https://corsproxy.io/?" + encodeURIComponent(CONFIG.SHEETS_URL));
-    if (!res.ok) throw new Error("HTTP " + res.status);
+    const res = await fetch("data/eventos.csv");
+    if (!res.ok) throw new Error("CSV não encontrado");
     const text = await res.text();
     const rows = parseCSV(text);
-    ALL_EVENTS = csvParaEventos(rows);
+    let mesAtual = null;
+
+    for (const row of rows) {
+      const col0 = clean(row[0]);
+      if (MESES.includes(col0)) { mesAtual = col0; continue; }
+      if (!col0 || col0 === "Data do evento") continue;
+      const date = parseDate(col0);
+      if (!date) continue;
+      const nome = clean(row[2]);
+      if (!nome) continue;
+
+      ALL_EVENTS.push({
+        date, month: mesAtual || "",
+        name: nome,
+        tipo:       clean(row[3]),
+        area:       clean(row[4]),
+        espaco:     clean(row[5]),
+        horario:    clean(row[6]),
+        convidados: clean(row[7]) || "-",
+        ticket_ev:  clean(row[8]) || "-",
+        ticket_it:  clean(row[9]) || "-",
+        ticket_fac: clean(row[10]) || "-",
+        status:     clean(row[11]),
+        drive:      clean(row[13]) || "#",
+      });
+    }
     API_LOADED = true;
   } catch(err) {
-    showError("Não foi possível carregar os dados: " + err.message);
+    console.error("Erro ao carregar CSV:", err);
+    document.body.innerHTML = '<div style="padding:2rem;font-family:sans-serif;color:#791F1F;background:#FCEBEB;border-radius:8px;margin:2rem">Erro ao carregar dados: ' + err.message + '</div>';
     return;
-  } finally {
-    if (loading) loading.style.display = "none";
-    if (bodyEl)  bodyEl.style.display  = "block";
   }
-
-  if (API_LOADED) {
-    populateFilters();
-    renderDashboard();
-    renderGrowth();
-    renderMonthTabs();
-    renderList();
-    renderCal();
-  }
+  populateFilters();
+  renderDashboard();
+  renderGrowth();
+  renderMonthTabs();
+  renderList();
+  renderCal();
 }
+
+// dados embutidos direto no HTML
 
 const TRI_MONTHS={Q1:["Janeiro","Fevereiro","Março"],Q2:["Abril","Maio","Junho"],Q3:["Julho","Agosto","Setembro"],Q4:["Outubro","Novembro","Dezembro"]};
 const TRI_LABELS={Q1:"1º Trimestre 2026",Q2:"2º Trimestre 2026",Q3:"3º Trimestre 2026",Q4:"4º Trimestre 2026"};
