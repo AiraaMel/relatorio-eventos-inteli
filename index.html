@@ -638,98 +638,202 @@ function exportPDF() {
   window.print();
 }
 
+// ── Init ───────────────────────────────────────────────────────────────────
 function exportPPT() {
   const pptx = new PptxGenJS();
   pptx.layout = 'LAYOUT_16x9';
 
   const NAVY='2B2D42', RED='EF233C', WHITE='FFFFFF', MUTED='5A5A72', BG='F4F4F6', BORDER='E2E2E6';
+  const GREEN='1D9E75', GOLD='E8A838', BLUE='185FA5', PURPLE='A259DD', INK='1A1A2E';
+  const colors = [NAVY, RED, GREEN, PURPLE, GOLD, BLUE, 'B4B2A9', '6C757D'];
   const events = getFilteredEvents();
   const triMonths = getTriMonths(currentTri);
   const total = events.length;
-  const fin   = events.filter(e=>e.status==='Finalizado').length;
-  const can   = events.filter(e=>e.status==='Cancelado').length;
-  const na    = events.filter(e=>e.status==='Não se aplica').length;
+  const fin = events.filter(e=>e.status==='Finalizado').length;
+  const can = events.filter(e=>e.status==='Cancelado').length;
+  const na = events.filter(e=>e.status==='Não se aplica').length;
   const guests = events.reduce((s,e)=>s+(parseInt(e.convidados)||0),0);
 
-  // ── Slide 1: Capa ────────────────────────────────────────────────────────
-  let sl = pptx.addSlide();
-  sl.background = {color:NAVY};
-  sl.addShape(pptx.ShapeType.rect, {x:0,y:4.8,w:10,h:0.25,fill:{color:RED},line:{type:'none'}});
-  sl.addText('Relatório de Eventos', {x:0.6,y:1.6,w:8.8,h:1,fontSize:36,bold:true,color:WHITE,fontFace:'Arial'});
-  sl.addText(triLabel(currentTri), {x:0.6,y:2.7,w:8.8,h:0.6,fontSize:20,color:RED,fontFace:'Arial'});
-  sl.addText('Inteli — Marketing de Eventos  |  Uso interno', {x:0.6,y:3.6,w:8.8,h:0.4,fontSize:13,color:'9999BB',fontFace:'Arial'});
-
-  // ── Slide 2: Métricas ────────────────────────────────────────────────────
-  sl = pptx.addSlide();
-  sl.background = {color:BG};
-  sl.addShape(pptx.ShapeType.rect, {x:0,y:0,w:10,h:0.18,fill:{color:RED},line:{type:'none'}});
-  sl.addText('Visão Geral — '+triLabel(currentTri), {x:0.4,y:0.3,w:9.2,h:0.55,fontSize:18,bold:true,color:NAVY});
-
-  const mets = [
-    {lbl:'Total de eventos',val:String(total)},
-    {lbl:'Finalizados',val:String(fin)},
-    {lbl:'Cancelados',val:String(can)},
-    {lbl:'Total de convidados',val:guests.toLocaleString('pt-BR')}
-  ];
-  mets.forEach((m,i)=>{
-    const x = 0.3+(i%2)*4.85, y = 1.05+Math.floor(i/2)*1.85;
-    sl.addShape(pptx.ShapeType.rect,{x,y,w:4.5,h:1.55,fill:{color:WHITE},line:{color:BORDER,pt:1}});
-    sl.addText(m.val, {x,y:y+0.1,w:4.5,h:0.9,fontSize:30,bold:true,color:NAVY,align:'center'});
-    sl.addText(m.lbl, {x,y:y+1.0,w:4.5,h:0.4,fontSize:12,color:MUTED,align:'center'});
+  const clean = (v, fallback='-') => {
+    const txt = String(v || '').trim();
+    return txt ? txt : fallback;
+  };
+  const pct = (part, base) => base ? `${Math.round(part/base*100)}%` : '0%';
+  const short = (txt, max=52) => {
+    txt = clean(txt);
+    return txt.length > max ? txt.slice(0, max-3) + '...' : txt;
+  };
+  const countBy = key => events.reduce((acc,e)=>{
+    const k = clean(e[key], 'Sem informação');
+    acc[k] = (acc[k] || 0) + 1;
+    return acc;
+  }, {});
+  const topEntries = (obj, limit=6) =>
+    Object.entries(obj).sort((a,b)=>b[1]-a[1] || a[0].localeCompare(b[0])).slice(0, limit);
+  const byMonth = month => events.filter(e=>e.month===month);
+  const monthStats = triMonths.map(month => {
+    const rows = byMonth(month);
+    const topArea = topEntries(rows.reduce((acc,e)=>{
+      const k = clean(e.area, 'Sem informação');
+      acc[k] = (acc[k] || 0) + 1;
+      return acc;
+    }, {}), 1)[0] || ['-',0];
+    const biggest = rows
+      .map(e=>({event:e, guests:parseInt(e.convidados)||0}))
+      .sort((a,b)=>b.guests-a.guests)[0];
+    return {
+      month,
+      total: rows.length,
+      fin: rows.filter(e=>e.status==='Finalizado').length,
+      can: rows.filter(e=>e.status==='Cancelado').length,
+      na: rows.filter(e=>e.status==='Não se aplica').length,
+      guests: rows.reduce((s,e)=>s+(parseInt(e.convidados)||0),0),
+      topArea: topArea[0],
+      topAreaCount: topArea[1],
+      biggestName: biggest ? biggest.event.name : '-',
+      biggestGuests: biggest ? biggest.guests : 0
+    };
   });
+  const ticketCount = key => events.filter(e => {
+    const v = clean(e[key], '');
+    return v && v!=='-' && v!=='--' && v.toLowerCase()!=='cancelado' && v.toLowerCase()!=='não se aplica' && v.toLowerCase()!=='x';
+  }).length;
 
-  // ── Slide 3: Resumo por mês ──────────────────────────────────────────────
-  sl = pptx.addSlide();
-  sl.background = {color:BG};
-  sl.addShape(pptx.ShapeType.rect,{x:0,y:0,w:10,h:0.18,fill:{color:RED},line:{type:'none'}});
-  sl.addText('Resumo por Mês', {x:0.4,y:0.3,w:9.2,h:0.55,fontSize:18,bold:true,color:NAVY});
-
-  const headerOpts = {bold:true,fill:{color:NAVY},color:WHITE,fontSize:11,align:'center',valign:'middle',border:{type:'solid',pt:1,color:NAVY}};
-  const cellOpts   = {fontSize:11,color:'1A1A2E',align:'center',valign:'middle',fill:{color:WHITE},border:{type:'solid',pt:1,color:BORDER}};
-  const tRows = [
-    [{text:'Mês',options:headerOpts},{text:'Total',options:headerOpts},{text:'Finalizados',options:headerOpts},{text:'Cancelados',options:headerOpts},{text:'Não se aplica',options:headerOpts}],
-    ...triMonths.map(m=>{
-      const me=events.filter(e=>e.month===m);
-      return [
-        {text:m,options:{...cellOpts,align:'left'}},
-        {text:String(me.length),options:cellOpts},
-        {text:String(me.filter(e=>e.status==='Finalizado').length),options:{...cellOpts,color:'0F6E56'}},
-        {text:String(me.filter(e=>e.status==='Cancelado').length),options:{...cellOpts,color:'A32D2D'}},
-        {text:String(me.filter(e=>e.status==='Não se aplica').length),options:cellOpts}
-      ];
-    }),
-    [{text:'Total',options:{...headerOpts,fill:{color:'3D3F5A'}}},{text:String(total),options:{...headerOpts,fill:{color:'3D3F5A'}}},{text:String(fin),options:{...headerOpts,fill:{color:'3D3F5A'}}},{text:String(can),options:{...headerOpts,fill:{color:'3D3F5A'}}},{text:String(na),options:{...headerOpts,fill:{color:'3D3F5A'}}}]
-  ];
-  sl.addTable(tRows,{x:0.4,y:1.05,w:9.2,colW:[2.5,1.5,2,1.6,1.6],rowH:0.45});
-
-  // ── Slides por mês (lista de eventos) ───────────────────────────────────
-  triMonths.forEach(month=>{
-    const me = events.filter(e=>e.month===month);
-    if (!me.length) return;
-    sl = pptx.addSlide();
+  function addTop(sl, title, section='RELATÓRIO DE EVENTOS') {
     sl.background = {color:BG};
-    sl.addShape(pptx.ShapeType.rect,{x:0,y:0,w:10,h:0.18,fill:{color:RED},line:{type:'none'}});
-    sl.addText(month, {x:0.4,y:0.3,w:7,h:0.55,fontSize:18,bold:true,color:NAVY});
-    sl.addText(`${me.length} evento${me.length!==1?'s':''}`, {x:7.4,y:0.3,w:2.2,h:0.55,fontSize:14,color:RED,align:'right'});
-    const note = growthNotes[`${currentTri}-${month}`];
-    if (note) sl.addText(note, {x:0.4,y:0.9,w:9.2,h:0.4,fontSize:11,color:MUTED,italic:true});
+    sl.addShape(pptx.ShapeType.rect, {x:0,y:0,w:10,h:1.08,fill:{color:NAVY},line:{type:'none'}});
+    sl.addText('inteli.', {x:0.34,y:0.16,w:0.8,h:0.18,fontSize:11,bold:true,color:WHITE,fontFace:'Arial'});
+    sl.addText('Relatório de Eventos — uso interno', {x:7.45,y:0.16,w:2.2,h:0.16,fontSize:7.2,color:'B8B8D8',align:'right',fontFace:'Arial'});
+    sl.addText(title, {x:0.55,y:0.50,w:5.9,h:0.32,fontSize:17,bold:true,color:WHITE,fontFace:'Arial',fit:'shrink'});
+    sl.addText(section, {x:0.56,y:1.22,w:3.1,h:0.18,fontSize:8,bold:true,color:NAVY,charSpace:1.1,fontFace:'Arial'});
+    sl.addShape(pptx.ShapeType.rect, {x:0,y:1.05,w:10,h:0.03,fill:{color:RED},line:{type:'none'}});
+  }
+  function addFooter(sl) {
+    sl.addShape(pptx.ShapeType.rect, {x:0,y:5.38,w:10,h:0.24,fill:{color:NAVY},line:{type:'none'}});
+    sl.addShape(pptx.ShapeType.rect, {x:0,y:5.34,w:10,h:0.03,fill:{color:RED},line:{type:'none'}});
+    sl.addText('inteli — Marketing de Eventos | Relatório interno | Atualizado em Junho 2026', {
+      x:2.8,y:5.43,w:4.4,h:0.1,fontSize:6.5,color:'B8B8D8',align:'center',fontFace:'Arial'
+    });
+  }
+  function card(sl, x, y, w, h, label, value, sub, color=NAVY) {
+    sl.addShape(pptx.ShapeType.rect,{x,y,w,h,fill:{color:WHITE},line:{color:BORDER,pt:0.8},radius:0.07});
+    sl.addText(label, {x:x+0.14,y:y+0.14,w:w-0.28,h:0.14,fontSize:7.5,color:NAVY,fontFace:'Arial'});
+    sl.addText(value, {x:x+0.14,y:y+0.36,w:w-0.28,h:0.32,fontSize:18,bold:true,color,fontFace:'Arial',fit:'shrink'});
+    sl.addText(sub, {x:x+0.14,y:y+h-0.22,w:w-0.28,h:0.12,fontSize:6.8,color:MUTED,fontFace:'Arial',fit:'shrink'});
+  }
+  function placeholder(sl, x, y, w, h, title) {
+    sl.addShape(pptx.ShapeType.rect,{x,y,w,h,fill:{color:WHITE,transparency:0},line:{color:BORDER,pt:0.8}});
+    sl.addText(title, {x:x+0.15,y:y+0.14,w:w-0.3,h:0.16,fontSize:7.8,bold:true,color:NAVY,charSpace:0.8,fontFace:'Arial'});
+    sl.addShape(pptx.ShapeType.rect,{x:x+0.15,y:y+0.44,w:w-0.3,h:0.01,fill:{color:BORDER},line:{type:'none'}});
+    sl.addText('Preencher com análise, conclusão ou encaminhamento.', {x:x+0.15,y:y+0.62,w:w-0.3,h:h-0.78,fontSize:9,color:'A3A3B8',italic:true,fontFace:'Arial',fit:'shrink'});
+  }
+  function miniBars(sl, x, y, w, h) {
+    const max = Math.max(...monthStats.map(m=>m.total),1);
+    const gap = 0.16;
+    const bw = (w - gap*2) / 3;
+    monthStats.forEach((m,i)=>{
+      const barH = Math.max(0.12, h*m.total/max);
+      const bx = x + i*(bw+gap);
+      sl.addText(String(m.total), {x:bx,y:y+h-barH-0.18,w:bw,h:0.12,fontSize:7.4,bold:true,color:NAVY,align:'center'});
+      sl.addShape(pptx.ShapeType.rect,{x:bx,y:y+h-barH,w:bw,h:barH,fill:{color:NAVY},line:{type:'none'}});
+      sl.addText(m.month.substring(0,3), {x:bx,y:y+h+0.06,w:bw,h:0.1,fontSize:6.5,color:MUTED,align:'center'});
+    });
+  }
+  function hBars(sl, x, y, w, rows) {
+    const max = Math.max(...rows.map(([,v])=>v),1);
+    rows.forEach(([label,value],i)=>{
+      const yy = y + i*0.25;
+      sl.addShape(pptx.ShapeType.rect,{x,y:yy,w:0.08,h:0.08,fill:{color:colors[i%colors.length]},line:{type:'none'}});
+      sl.addText(short(label,28), {x:x+0.17,y:yy-0.02,w:1.75,h:0.11,fontSize:6.7,color:MUTED,fontFace:'Arial'});
+      sl.addText(pct(value,total), {x:x+w-0.45,y:yy-0.02,w:0.4,h:0.11,fontSize:6.7,bold:true,color:INK,align:'right'});
+      sl.addShape(pptx.ShapeType.rect,{x:x+2.0,y:yy+0.02,w:(w-2.55)*value/max,h:0.04,fill:{color:colors[i%colors.length]},line:{type:'none'}});
+    });
+  }
 
-    const evH = [{text:'Data',options:headerOpts},{text:'Evento',options:headerOpts},{text:'Área',options:{...headerOpts,align:'left'}},{text:'Convidados',options:headerOpts},{text:'Status',options:headerOpts}];
-    const evRows = [evH, ...me.map(e=>[
-      {text:formatDate(e.date),options:{...cellOpts,fontSize:10}},
-      {text:e.name,options:{...cellOpts,align:'left',fontSize:10}},
-      {text:e.area,options:{...cellOpts,align:'left',fontSize:10}},
-      {text:e.convidados,options:{...cellOpts,fontSize:10}},
-      {text:e.status,options:{...cellOpts,fontSize:10}}
-    ])];
-    const yStart = note ? 1.38 : 1.05;
-    sl.addTable(evRows,{x:0.4,y:yStart,w:9.2,colW:[1.3,3.8,2.1,1.1,1.3],rowH:0.38,autoPage:true,autoPageRepeatHeader:true});
+  pptx.author = 'Inteli';
+  pptx.company = 'Inteli';
+  pptx.subject = `Relatório de Eventos — ${triLabel(currentTri)}`;
+  pptx.title = `Relatório de Eventos — ${triLabel(currentTri)}`;
+
+  let sl = pptx.addSlide();
+  addTop(sl, 'Relatório de Eventos', `VISÃO GERAL — ${triLabel(currentTri).toUpperCase()}`);
+  card(sl,0.58,1.48,2.18,0.68,'Total de eventos',String(total),triLabel(currentTri),NAVY);
+  card(sl,2.86,1.48,2.18,0.68,'Finalizados',String(fin),`${pct(fin,total)} do total`,GREEN);
+  card(sl,5.14,1.48,2.18,0.68,'Cancelados',String(can),`${pct(can,total)} do total`,'A32D2D');
+  card(sl,7.42,1.48,2.18,0.68,'Total de convidados',guests.toLocaleString('pt-BR'),'estimativa',MUTED);
+  sl.addShape(pptx.ShapeType.rect,{x:0.58,y:2.34,w:4.45,h:1.45,fill:{color:WHITE},line:{color:BORDER,pt:0.8}});
+  sl.addText('VOLUME POR MÊS', {x:0.75,y:2.50,w:1.4,h:0.12,fontSize:7.2,bold:true,color:NAVY,charSpace:1});
+  miniBars(sl,0.75,2.78,4.0,0.55);
+  sl.addShape(pptx.ShapeType.rect,{x:5.14,y:2.34,w:4.46,h:1.45,fill:{color:WHITE},line:{color:BORDER,pt:0.8}});
+  sl.addText('ÁREA DEMANDANTE', {x:5.31,y:2.50,w:1.55,h:0.12,fontSize:7.2,bold:true,color:NAVY,charSpace:1});
+  hBars(sl,5.36,2.78,3.9,topEntries(countBy('area'),6));
+  sl.addText('RESUMO POR MÊS', {x:0.58,y:4.00,w:1.45,h:0.12,fontSize:7.2,bold:true,color:NAVY,charSpace:1});
+  const header = {bold:true,fill:{color:NAVY},color:'B8B8D8',fontSize:7,align:'center',valign:'middle',border:{type:'solid',pt:0.4,color:NAVY}};
+  const cell = {fontSize:7.2,color:INK,align:'center',valign:'middle',fill:{color:WHITE},border:{type:'solid',pt:0.35,color:BORDER}};
+  sl.addTable([
+    [{text:'Mês',options:{...header,align:'left'}},{text:'Total',options:header},{text:'Finalizados',options:header},{text:'Cancelados',options:header},{text:'Não se aplica',options:header}],
+    ...monthStats.map(m=>[
+      {text:m.month,options:{...cell,align:'left'}},{text:String(m.total),options:cell},{text:String(m.fin),options:{...cell,color:GREEN}},{text:String(m.can),options:{...cell,color:'A32D2D'}},{text:String(m.na),options:cell}
+    ]),
+    [{text:'Total',options:{...header,align:'left'}},{text:String(total),options:header},{text:String(fin),options:header},{text:String(can),options:header},{text:String(na),options:header}]
+  ],{x:0.58,y:4.20,w:9.02,colW:[2.1,1.55,1.95,1.85,1.57],rowH:0.24});
+  addFooter(sl);
+
+  sl = pptx.addSlide();
+  addTop(sl, 'Crescimento', `CRESCIMENTO — ${triLabel(currentTri).toUpperCase()}`);
+  monthStats.forEach((m,i)=>{
+    const x = 0.58 + i*3.02;
+    sl.addShape(pptx.ShapeType.rect,{x,y:1.46,w:2.72,h:1.2,fill:{color:WHITE},line:{color:BORDER,pt:0.8}});
+    sl.addText(m.month.toUpperCase(), {x:x+0.16,y:1.62,w:1.25,h:0.12,fontSize:7,bold:true,color:RED,charSpace:1});
+    sl.addText(String(m.total), {x:x+0.16,y:1.84,w:0.55,h:0.28,fontSize:20,bold:true,color:NAVY});
+    sl.addText('eventos', {x:x+0.78,y:2.02,w:0.65,h:0.1,fontSize:6.8,color:MUTED});
+    sl.addText(`${m.fin} finalizados | ${m.can} cancelados`, {x:x+0.16,y:2.32,w:2.1,h:0.1,fontSize:6.8,color:MUTED});
   });
+  sl.addShape(pptx.ShapeType.rect,{x:0.58,y:2.96,w:4.35,h:1.42,fill:{color:WHITE},line:{color:BORDER,pt:0.8}});
+  sl.addText('ANÁLISE DE DEMANDA', {x:0.75,y:3.14,w:1.6,h:0.12,fontSize:7.2,bold:true,color:NAVY,charSpace:1});
+  hBars(sl,0.78,3.42,3.65,topEntries(countBy('area'),5));
+  placeholder(sl,5.18,2.96,4.42,1.42,'CONCLUSÃO DO CRESCIMENTO');
+  addFooter(sl);
+
+  sl = pptx.addSlide();
+  addTop(sl, 'Destaques do mês', `DESTAQUES — ${triLabel(currentTri).toUpperCase()}`);
+  monthStats.forEach((m,i)=>{
+    const x = 0.58 + i*3.02;
+    sl.addShape(pptx.ShapeType.rect,{x,y:1.46,w:2.72,h:2.88,fill:{color:WHITE},line:{color:BORDER,pt:0.8}});
+    sl.addText(m.month.toUpperCase(), {x:x+0.16,y:1.64,w:1.4,h:0.12,fontSize:7.2,bold:true,color:RED,charSpace:1});
+    sl.addText(`${m.total} eventos`, {x:x+0.16,y:1.92,w:1.35,h:0.22,fontSize:15,bold:true,color:NAVY});
+    sl.addText('Área destaque', {x:x+0.16,y:2.32,w:1.0,h:0.1,fontSize:6.7,color:MUTED});
+    sl.addText(`${short(m.topArea,26)} (${m.topAreaCount})`, {x:x+0.16,y:2.48,w:2.35,h:0.16,fontSize:8.2,color:INK,fit:'shrink'});
+    sl.addText('Evento com maior público', {x:x+0.16,y:2.84,w:1.5,h:0.1,fontSize:6.7,color:MUTED});
+    sl.addText(`${short(m.biggestName,34)}${m.biggestGuests ? ` — ${m.biggestGuests}` : ''}`, {x:x+0.16,y:3.00,w:2.35,h:0.25,fontSize:8,color:INK,fit:'shrink'});
+    sl.addText('Destaque / observação', {x:x+0.16,y:3.52,w:1.55,h:0.1,fontSize:6.7,color:MUTED});
+    sl.addShape(pptx.ShapeType.rect,{x:x+0.16,y:3.72,w:2.36,h:0.38,fill:{color:'FAFAFC'},line:{color:BORDER,pt:0.5}});
+    sl.addText('Preencher', {x:x+0.26,y:3.84,w:2.1,h:0.1,fontSize:7.5,color:'A3A3B8',italic:true});
+  });
+  addFooter(sl);
+
+  sl = pptx.addSlide();
+  addTop(sl, 'Times e áreas envolvidos', `TIMES — ${triLabel(currentTri).toUpperCase()}`);
+  card(sl,0.58,1.48,2.18,0.68,'Tickets IT Bar',String(ticketCount('ticket_it')),'solicitações válidas',BLUE);
+  card(sl,2.86,1.48,2.18,0.68,'Tickets Facilities',String(ticketCount('ticket_fac')),'solicitações válidas',GOLD);
+  card(sl,5.14,1.48,2.18,0.68,'Áreas envolvidas',String(Object.keys(countBy('area')).length),'demandantes no período',NAVY);
+  card(sl,7.42,1.48,2.18,0.68,'Espaços usados',String(Object.keys(countBy('espaco')).length),'locais mapeados',PURPLE);
+  sl.addShape(pptx.ShapeType.rect,{x:0.58,y:2.48,w:4.35,h:1.82,fill:{color:WHITE},line:{color:BORDER,pt:0.8}});
+  sl.addText('PRINCIPAIS ÁREAS', {x:0.75,y:2.66,w:1.4,h:0.12,fontSize:7.2,bold:true,color:NAVY,charSpace:1});
+  hBars(sl,0.78,2.98,3.65,topEntries(countBy('area'),6));
+  placeholder(sl,5.18,2.48,4.42,1.82,'OBSERVAÇÕES SOBRE TIMES');
+  addFooter(sl);
+
+  sl = pptx.addSlide();
+  addTop(sl, 'Conclusões e próximos passos', `CONCLUSÃO — ${triLabel(currentTri).toUpperCase()}`);
+  placeholder(sl,0.58,1.48,2.82,2.68,'SÍNTESE EXECUTIVA');
+  placeholder(sl,3.59,1.48,2.82,2.68,'APRENDIZADOS DO PERÍODO');
+  placeholder(sl,6.78,1.48,2.82,2.68,'PRÓXIMAS AÇÕES');
+  addFooter(sl);
 
   pptx.writeFile({fileName:`Relatorio-Eventos-Inteli-${currentTri}.pptx`});
 }
 
-// ── Init ───────────────────────────────────────────────────────────────────
 populateFilters();renderDashboard();renderGrowth();renderMonthTabs();renderList();renderCal();
 </script>
 </body>
